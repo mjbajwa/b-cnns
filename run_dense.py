@@ -203,7 +203,7 @@ def run_dense_bnn(gpu=True):
     # Initialize MCMC
 
     # kernel = NUTS(model, init_strategy=init_to_value(values=init_new))
-    kernel = NUTS(model)
+    kernel = NUTS(model, init_strategy=init_to_feasible())
     mcmc = MCMC(  
         kernel,
         num_warmup=NUM_WARMUP,
