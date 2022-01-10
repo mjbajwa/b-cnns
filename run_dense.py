@@ -146,8 +146,8 @@ def run_dense_bnn(gpu=True):
             # "Conv_0.kernel": dist.Normal(0, 100), 
             # "Conv_1.bias": dist.Normal(0, 100), 
             # "Conv_1.kernel": dist.Normal(0, 100), 
-            "Dense_0.bias": dist.Normal(0, 10), 
-            "Dense_0.kernel": dist.Normal(0, 10), 
+            "Dense_0.bias": dist.Normal(0, 100), 
+            "Dense_0.kernel": dist.Normal(0, 100), 
             "Dense_1.bias": dist.Normal(0, 10), 
             "Dense_1.kernel": dist.Normal(0, 10),
             "Dense_2.bias": dist.Normal(0, 10), 
@@ -245,7 +245,7 @@ def run_dense_bnn(gpu=True):
     train_preds_ave = jnp.mean(train_preds, axis=0)
     train_preds_index = jnp.argmax(train_preds_ave, axis=1)
     accuracy = (temp_ds["label"] == train_preds_index).mean()*100
-    print(accuracy)
+    print("Train accuracy: ", accuracy)
 
     # Test accuracy calculation
 
@@ -253,9 +253,9 @@ def run_dense_bnn(gpu=True):
     test_preds_ave = jnp.mean(test_preds, axis=0)
     test_preds_index = jnp.argmax(test_preds_ave, axis=1)
     accuracy = (test_ds["label"] == test_preds_index).mean()*100
-    print(accuracy)
+    print("Test accuracy: ", accuracy)
 
-    all_samples = mcmc.get_samples()
+    # all_samples = mcmc.get_samples()
 
     # plt.plot(all_samples["CNN/Conv_0.kernel"][:, 3,3,3,16], "o")
     # plt.plot(all_samples["CNN/Dense_0.kernel"][:, 10], "o")
