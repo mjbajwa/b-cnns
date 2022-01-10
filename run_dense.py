@@ -64,8 +64,8 @@ def run_dense_bnn(gpu=True):
     # CONSTANTS 
 
     TRAIN_IDX = 50000
-    NUM_WARMUP = 1000
-    NUM_SAMPLES = 1000
+    NUM_WARMUP = 100
+    NUM_SAMPLES = 100
 
     # Create keys for numpyro
 
@@ -146,10 +146,10 @@ def run_dense_bnn(gpu=True):
             # "Conv_0.kernel": dist.Normal(0, 100), 
             # "Conv_1.bias": dist.Normal(0, 100), 
             # "Conv_1.kernel": dist.Normal(0, 100), 
-            "Dense_0.bias": dist.Normal(0, 100), 
-            "Dense_0.kernel": dist.Normal(0, 100), 
-            "Dense_1.bias": dist.Normal(0, 50), 
-            "Dense_1.kernel": dist.Normal(0, 50),
+            "Dense_0.bias": dist.Normal(0, 10), 
+            "Dense_0.kernel": dist.Normal(0, 10), 
+            "Dense_1.bias": dist.Normal(0, 10), 
+            "Dense_1.kernel": dist.Normal(0, 10),
             "Dense_2.bias": dist.Normal(0, 10), 
             "Dense_2.kernel": dist.Normal(0, 10)
             },
@@ -266,4 +266,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Convolutional Bayesian Neural Networks for CIFAR-10")
     parser.add_argument("--gpu", type=bool, default=False)
     args = parser.parse_args()
+    
     run_dense_bnn(args.gpu)
