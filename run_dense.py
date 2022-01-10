@@ -150,16 +150,16 @@ def run_dense_bnn(gpu=True):
             # "Conv_0.kernel": dist.Normal(0, 100), 
             # "Conv_1.bias": dist.Normal(0, 100), 
             # "Conv_1.kernel": dist.Normal(0, 100), 
-            "Dense_0.bias": dist.Normal(0, 100), 
-            "Dense_0.kernel": dist.Normal(0, 100), 
-            "Dense_1.bias": dist.Normal(0, 100), 
-            "Dense_1.kernel": dist.Normal(0, 100),
-            "Dense_2.bias": dist.Normal(0, 100), 
-            "Dense_2.kernel": dist.Normal(0, 100),
-            "Dense_3.bias": dist.Normal(0, 100), 
-            "Dense_3.kernel": dist.Normal(0, 100),
-            "Dense_3.bias": dist.Normal(0, 100), 
-            "Dense_3.kernel": dist.Normal(0, 100),
+            "Dense_0.bias": dist.Normal(0, 10), 
+            "Dense_0.kernel": dist.Normal(0, 10), 
+            "Dense_1.bias": dist.Normal(0, 10), 
+            "Dense_1.kernel": dist.Normal(0, 10),
+            "Dense_2.bias": dist.Normal(0, 10), 
+            "Dense_2.kernel": dist.Normal(0, 10),
+            "Dense_3.bias": dist.Normal(0, 10), 
+            "Dense_3.kernel": dist.Normal(0, 10),
+            "Dense_3.bias": dist.Normal(0, 10), 
+            "Dense_3.kernel": dist.Normal(0, 10),
             },
             
             input_shape=(3072, )
@@ -189,7 +189,7 @@ def run_dense_bnn(gpu=True):
 
     # Create more reasonable initial values by sampling from the prior
 
-    prior_dist = dist.Normal(0, 100)
+    prior_dist = dist.Normal(0, 10)
     init_new = init.copy()
     total_params = 0
 
