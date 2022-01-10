@@ -128,10 +128,10 @@ def run_dense_bnn(gpu=True):
             x = nn.softplus(x) # TODO: check tanh vs softplus
             x = nn.Dense(features=256)(x)
             x = nn.softplus(x) # TODO: check tanh vs softplus
-            x = nn.Dense(features=512)(x)
-            x = nn.softplus(x) # TODO: check tanh vs softplus
-            x = nn.Dense(features=256)(x)
-            x = nn.softplus(x) # TODO: check tanh vs softplus
+            # x = nn.Dense(features=512)(x)
+            # x = nn.softplus(x) # TODO: check tanh vs softplus
+            # x = nn.Dense(features=256)(x)
+            # x = nn.softplus(x) # TODO: check tanh vs softplus
             x = nn.Dense(features=10)(x)
             x = nn.softmax(x)
             
@@ -150,16 +150,16 @@ def run_dense_bnn(gpu=True):
             # "Conv_0.kernel": dist.Normal(0, 100), 
             # "Conv_1.bias": dist.Normal(0, 100), 
             # "Conv_1.kernel": dist.Normal(0, 100), 
-            "Dense_0.bias": dist.Normal(0, 10), 
-            "Dense_0.kernel": dist.Normal(0, 10), 
-            "Dense_1.bias": dist.Normal(0, 10), 
-            "Dense_1.kernel": dist.Normal(0, 10),
-            "Dense_2.bias": dist.Normal(0, 10), 
-            "Dense_2.kernel": dist.Normal(0, 10),
-            "Dense_3.bias": dist.Normal(0, 10), 
-            "Dense_3.kernel": dist.Normal(0, 10),
-            "Dense_3.bias": dist.Normal(0, 10), 
-            "Dense_3.kernel": dist.Normal(0, 10),
+            "Dense_0.bias": dist.Normal(0, 100), 
+            "Dense_0.kernel": dist.Normal(0, 100), 
+            "Dense_1.bias": dist.Normal(0, 100), 
+            "Dense_1.kernel": dist.Normal(0, 100),
+            "Dense_2.bias": dist.Normal(0, 100), 
+            "Dense_2.kernel": dist.Normal(0, 100),
+            # "Dense_3.bias": dist.Normal(0, 10), 
+            # "Dense_3.kernel": dist.Normal(0, 10),
+            # "Dense_3.bias": dist.Normal(0, 10), 
+            # "Dense_3.kernel": dist.Normal(0, 10),
             },
             
             input_shape=(3072, )
