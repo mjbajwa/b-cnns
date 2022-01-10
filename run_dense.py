@@ -20,6 +20,7 @@ import jax.random as random
 import tensorflow_datasets as tfds
 import tensorflow.compat.v2 as tf
 import jax.tools.colab_tpu
+import argparse
 
 from sklearn.preprocessing import LabelBinarizer
 from numpyro.infer import init_to_value, Predictive
@@ -224,7 +225,7 @@ def run_dense_bnn(gpu=True):
 
     # mcmc.print_summary()
 
-    """### Prediction Utilities"""
+    ### Prediction Utilities
 
     # TODO:
 
@@ -258,4 +259,7 @@ def run_dense_bnn(gpu=True):
     # mcmc.print_summary()
 
 if __name__ == "__main__":
-    run_dense_bnn()
+    parser = argparse.ArgumentParser(description="Convolutional Bayesian Neural Networks for CIFAR-10")
+    parser.add_argument("--gpu", type=bool, default=False)
+    args = parser.parse_args()
+    run_dense_bnn(args.gpu)
