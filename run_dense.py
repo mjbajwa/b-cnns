@@ -128,6 +128,10 @@ def run_dense_bnn(gpu=True):
             x = nn.softplus(x) # TODO: check tanh vs softplus
             x = nn.Dense(features=256)(x)
             x = nn.softplus(x) # TODO: check tanh vs softplus
+            x = nn.Dense(features=512)(x)
+            x = nn.softplus(x) # TODO: check tanh vs softplus
+            x = nn.Dense(features=256)(x)
+            x = nn.softplus(x) # TODO: check tanh vs softplus
             x = nn.Dense(features=10)(x)
             x = nn.softmax(x)
             
@@ -152,6 +156,10 @@ def run_dense_bnn(gpu=True):
             "Dense_1.kernel": dist.Normal(0, 50),
             "Dense_2.bias": dist.Normal(0, 10), 
             "Dense_2.kernel": dist.Normal(0, 10)
+            "Dense_3.bias": dist.Normal(0, 50), 
+            "Dense_3.kernel": dist.Normal(0, 50)
+            "Dense_3.bias": dist.Normal(0, 100), 
+            "Dense_3.kernel": dist.Normal(0, 100)
             },
             
             input_shape=(3072, )
