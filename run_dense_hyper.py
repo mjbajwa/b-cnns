@@ -232,7 +232,7 @@ def run_dense_bnn(gpu=True):
         kernel,
         num_warmup=NUM_WARMUP,
         num_samples=NUM_SAMPLES,
-        num_chains=4,
+        num_chains=1,
         progress_bar=True,
         # jit_model_args=True,
     )
