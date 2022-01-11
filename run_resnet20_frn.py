@@ -253,7 +253,7 @@ def run_resnet20_frn(gpu=True):
     # mcmc.run(rng_key, temp_ds['image'], y_train)
 
     # mcmc.run(rng_key, train_x_flat, y_train)
-    mcmc.run(rng_key, temp_ds, y_train)
+    mcmc.run(rng_key, train_x, y_train)
 
     # for i in range(NUM_SAMPLES):
     #    mcmc.run(random.PRNGKey(i), temp_ds['image'], y_train)
