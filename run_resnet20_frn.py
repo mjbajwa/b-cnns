@@ -30,6 +30,7 @@ from numpyro.contrib.module import random_flax_module, flax_module, random_haiku
 from numpyro.infer import init_to_feasible\
 
 from models.resnet import ResNet, ResNetBlock
+from functools import partial
 
 # jax.tools.colab_tpu.setup_tpu()
 
