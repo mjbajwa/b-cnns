@@ -124,14 +124,14 @@ def run_dense_bnn(gpu=True):
         def __call__(self, x):
             
             # x = x.reshape(x.shape[0], -1)  # flatten
-            x = nn.Dense(features=128)(x)
-            x = nn.softplus(x) # TODO: check tanh vs softplus
             x = nn.Dense(features=256)(x)
             x = nn.softplus(x) # TODO: check tanh vs softplus
-            # x = nn.Dense(features=512)(x)
-            # x = nn.softplus(x) # TODO: check tanh vs softplus
-            # x = nn.Dense(features=256)(x)
-            # x = nn.softplus(x) # TODO: check tanh vs softplus
+            x = nn.Dense(features=512)(x)
+            x = nn.softplus(x) # TODO: check tanh vs softplus
+            x = nn.Dense(features=1024)(x)
+            x = nn.softplus(x) # TODO: check tanh vs softplus
+            x = nn.Dense(features=512)(x)
+            x = nn.softplus(x) # TODO: check tanh vs softplus
             x = nn.Dense(features=10)(x)
             x = nn.softmax(x)
             
@@ -146,8 +146,13 @@ def run_dense_bnn(gpu=True):
         dense_0_b_prec = numpyro.sample("dense_0_b_prec", dist.Gamma(0.25, 0.000625))
         dense_1_w_prec = numpyro.sample("dense_1_w_prec", dist.Gamma(0.25, 0.000625/jnp.sqrt(256)))
         dense_1_b_prec = numpyro.sample("dense_1_b_prec", dist.Gamma(0.25, 0.000625))
-        dense_2_w_prec = numpyro.sample("dense_2_w_prec", dist.Gamma(0.25, 0.000625))
+        dense_2_w_prec = numpyro.sample("dense_2_w_prec", dist.Gamma(0.25, 0.000625/jnp.sqrt(512)))
         dense_2_b_prec = numpyro.sample("dense_2_b_prec", dist.Gamma(0.25, 0.000625))
+        dense_3_w_prec = numpyro.sample("dense_2_w_prec", dist.Gamma(0.25, 0.000625/jnp.sqrt(1024)))
+        dense_3_b_prec = numpyro.sample("dense_2_b_prec", dist.Gamma(0.25, 0.000625))
+        dense_4_w_prec = numpyro.sample("dense_2_w_prec", dist.Gamma(0.25, 0.000625/jnp.sqrt(512)))
+        dense_4_b_prec = numpyro.sample("dense_2_b_prec", dist.Gamma(0.25, 0.000625))
+        dense_5_w_prec = numpyro.sample("dense_2_w_prec", dist.Gamma(0.25, 0.000625))
 
         # Neural Network model
 
@@ -165,12 +170,13 @@ def run_dense_bnn(gpu=True):
             "Dense_0.kernel": dist.Normal(0, 1/jnp.sqrt(dense_0_w_prec)), 
             "Dense_1.bias": dist.Normal(0, 1/jnp.sqrt(dense_1_b_prec)), 
             "Dense_1.kernel": dist.Normal(0, 1/jnp.sqrt(dense_1_w_prec)),
-            "Dense_2.bias": dist.Normal(0, 1/jnp.sqrt(dense_2_w_prec)), 
+            "Dense_2.bias": dist.Normal(0, 1/jnp.sqrt(dense_2_b_prec)), 
             "Dense_2.kernel": dist.Normal(0, 1/jnp.sqrt(dense_2_w_prec)),
-            # "Dense_3.bias": dist.Normal(0, 10), 
-            # "Dense_3.kernel": dist.Normal(0, 10),
-            # "Dense_3.bias": dist.Normal(0, 10), 
-            # "Dense_3.kernel": dist.Normal(0, 10),
+            "Dense_3.bias": dist.Normal(0, 1/jnp.sqrt(dense_3_b_prec)), 
+            "Dense_3.kernel": dist.Normal(0, 1/jnp.sqrt(dense_3_w_prec)), 
+            "Dense_4.bias": dist.Normal(0, 1/jnp.sqrt(dense_4_b_prec)), 
+            "Dense_4.kernel": dist.Normal(0, 1/jnp.sqrt(dense_4_w_prec)), 
+            "Dense_5.kernel": dist.Normal(0, 1/jnp.sqrt(dense_5_w_prec)),
             },
             
             input_shape=(3072, )
@@ -221,13 +227,12 @@ def run_dense_bnn(gpu=True):
 
     # Initialize MCMC
 
-    # kernel = NUTS(model, init_strategy=init_to_value(values=init_new))
     kernel = NUTS(model, init_strategy=init_to_feasible())
     mcmc = MCMC(  
         kernel,
         num_warmup=NUM_WARMUP,
         num_samples=NUM_SAMPLES,
-        num_chains=1,
+        num_chains=4,
         progress_bar=True,
         # jit_model_args=True,
     )
@@ -282,6 +287,7 @@ def run_dense_bnn(gpu=True):
     # mcmc.print_summary()
 
 if __name__ == "__main__":
+    
     parser = argparse.ArgumentParser(description="Convolutional Bayesian Neural Networks for CIFAR-10")
     parser.add_argument("--gpu", type=bool, default=False)
     args = parser.parse_args()
