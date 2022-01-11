@@ -64,8 +64,8 @@ def run_dense_bnn(gpu=True):
     # CONSTANTS 
 
     TRAIN_IDX = 50000
-    NUM_WARMUP = 1000
-    NUM_SAMPLES = 1000
+    NUM_WARMUP = 100
+    NUM_SAMPLES = 200
 
     # Create keys for numpyro
 
