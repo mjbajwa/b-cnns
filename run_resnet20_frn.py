@@ -99,6 +99,9 @@ def run_resnet20_frn(gpu=True):
     temp_ds['label'] = train_ds['label'][0:TRAIN_IDX]
     y_train = y_train_all[0:TRAIN_IDX]
 
+    train_x = temp_ds['image']
+    test_x = test_ds['image']
+
     # Flatten 
 
     # train_x_flat = np.zeros(shape=(temp_ds['image'].shape[0], np.prod(temp_ds['image'].shape[1:])))
@@ -168,10 +171,10 @@ def run_resnet20_frn(gpu=True):
             "ResNet20FRN", 
             module, 
             prior = {
-            "Conv_0.bias": dist.Normal(0, 100), 
-            "Conv_0.kernel": dist.Normal(0, 100), 
-            "Conv_1.bias": dist.Normal(0, 100), 
-            "Conv_1.kernel": dist.Normal(0, 100), 
+            # "conv_init.bias": dist.Normal(0, 100), 
+            "conv_init.kernel": dist.Normal(0, 100), 
+            # "Conv_1.bias": dist.Normal(0, 100), 
+            # "Conv_1.kernel": dist.Normal(0, 100), 
             # "Dense_0.bias": dist.Normal(0, 1/jnp.sqrt(dense_0_b_prec)), 
             # "Dense_0.kernel": dist.Normal(0, 1/jnp.sqrt(dense_0_w_prec)), 
             # "Dense_1.bias": dist.Normal(0, 1/jnp.sqrt(dense_1_b_prec)), 
@@ -185,6 +188,7 @@ def run_resnet20_frn(gpu=True):
             # "Dense_5.kernel": dist.Normal(0, 1/jnp.sqrt(dense_5_w_prec)),
             },
             input_shape=(1, 32, 32, 3), 
+            mutable=["batch_stats"],
         )
                 
         numpyro.sample("y_pred", dist.Multinomial(total_count=1, probs=net(x)), obs=y)
