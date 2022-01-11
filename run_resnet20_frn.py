@@ -184,7 +184,8 @@ def run_resnet20_frn(gpu=True):
             # "Dense_4.kernel": dist.Normal(0, 1/jnp.sqrt(dense_4_w_prec)), 
             # "Dense_5.kernel": dist.Normal(0, 1/jnp.sqrt(dense_5_w_prec)),
             },
-            input_shape=(1, 32, 32, 3)
+            input_shape=(1, 32, 32, 3), 
+            mutable=["batch_stats"]
         
         )
                 
