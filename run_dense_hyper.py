@@ -148,11 +148,11 @@ def run_dense_bnn(gpu=True):
         dense_1_b_prec = numpyro.sample("dense_1_b_prec", dist.Gamma(0.25, 0.000625))
         dense_2_w_prec = numpyro.sample("dense_2_w_prec", dist.Gamma(0.25, 0.000625/jnp.sqrt(512)))
         dense_2_b_prec = numpyro.sample("dense_2_b_prec", dist.Gamma(0.25, 0.000625))
-        dense_3_w_prec = numpyro.sample("dense_2_w_prec", dist.Gamma(0.25, 0.000625/jnp.sqrt(1024)))
-        dense_3_b_prec = numpyro.sample("dense_2_b_prec", dist.Gamma(0.25, 0.000625))
-        dense_4_w_prec = numpyro.sample("dense_2_w_prec", dist.Gamma(0.25, 0.000625/jnp.sqrt(512)))
-        dense_4_b_prec = numpyro.sample("dense_2_b_prec", dist.Gamma(0.25, 0.000625))
-        dense_5_w_prec = numpyro.sample("dense_2_w_prec", dist.Gamma(0.25, 0.000625))
+        dense_3_w_prec = numpyro.sample("dense_3_w_prec", dist.Gamma(0.25, 0.000625/jnp.sqrt(1024)))
+        dense_3_b_prec = numpyro.sample("dense_3_b_prec", dist.Gamma(0.25, 0.000625))
+        dense_4_w_prec = numpyro.sample("dense_4_w_prec", dist.Gamma(0.25, 0.000625/jnp.sqrt(512)))
+        dense_4_b_prec = numpyro.sample("dense_4_b_prec", dist.Gamma(0.25, 0.000625))
+        dense_5_w_prec = numpyro.sample("dense_5_w_prec", dist.Gamma(0.25, 0.000625))
 
         # Neural Network model
 
