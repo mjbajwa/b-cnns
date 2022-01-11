@@ -162,7 +162,7 @@ def run_resnet20_frn(gpu=True):
         # Neural Network model
 
         # module = CNN()
-        module = ResNet18()
+        module = ResNet18(num_classes=10)
 
         net = random_flax_module(
             "ResNet20FRN", 
