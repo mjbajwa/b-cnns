@@ -204,7 +204,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
     accuracy = (test_ds["label"] == test_preds_index).mean()*100
     print("Test accuracy: ", accuracy)
 
-    # all_samples = mcmc.get_samples()
+    # all_samples = mcmc.get_samples() 
     # plt.plot(all_samples["CNN/Conv_0.kernel"][:, 3,3,3,16], "o")
     # plt.plot(all_samples["CNN/Dense_0.kernel"][:, 10], "o")
 
