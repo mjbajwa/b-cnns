@@ -95,8 +95,8 @@ def run_dense_bnn(gpu=True):
     temp_ds['label'] = train_ds['label'][0:TRAIN_IDX]
     y_train = y_train_all[0:TRAIN_IDX]
 
-    train_x = temp_ds['image']
-    train_y = temp_ds['image']
+    train_x = train_ds['image']
+    test_x = test_ds['image']
 
     # Flatten 
 
@@ -136,7 +136,7 @@ def run_dense_bnn(gpu=True):
             x = nn.Dense(features=256)(x)
             x = nn.relu(x)
             x = nn.Dense(features=10)(x)
-            x = nn.log_softmax(x)
+            x = nn.softmax(x)
                 
             return x
         
@@ -167,7 +167,7 @@ def run_dense_bnn(gpu=True):
         
         )
                 
-        numpyro.sample("y_pred", dist.Multinomial(total_count=1, probs=jnp.exp(net(x))), obs=y)
+        numpyro.sample("y_pred", dist.Multinomial(total_count=1, probs=net(x)), obs=y)
 
     # model2 = CNN()
     # batch = train_x_flat[0]  # (N, H, W, C) format
