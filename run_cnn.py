@@ -175,7 +175,7 @@ def run_dense_bnn(gpu=True):
     # output = model2.apply(variables, batch)      
     # print(output.shape)
 
-    batch = train_x_flat[0, :]
+    batch = train_x[0, :]
 
     print(batch.shape)
 
