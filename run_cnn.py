@@ -30,7 +30,7 @@ from numpyro.infer import init_to_feasible
 
 # jax.tools.colab_tpu.setup_tpu()
 
-def run_dense_bnn(gpu=True):
+def run_conv_bnn(gpu=True):
 
     # Administrative stuff
 
@@ -98,27 +98,6 @@ def run_dense_bnn(gpu=True):
     train_x = train_ds['image']
     test_x = test_ds['image']
 
-    # Flatten 
-
-    # train_x_flat = np.zeros(shape=(temp_ds['image'].shape[0], np.prod(temp_ds['image'].shape[1:])))
-    # test_x_flat = np.zeros(shape=(test_ds['image'].shape[0], np.prod(test_ds['image'].shape[1:])))
-
-    # for i, im in tqdm.tqdm(enumerate(temp_ds['image'])):
-    #     train_x_flat[i, :] = im.flatten()
-        
-    # for i, im in tqdm.tqdm(enumerate(test_ds['image'])):
-    #     test_x_flat[i, :] = im.flatten()
-
-    # train_x_flat.shape
-
-    # test_x_flat.shape
-
-    # idx = 10
-    # plt.figure(figsize=(5, 5))
-    # plt.imshow(temp_ds['image'][idx])
-    # plt.title(temp_ds['label'][idx])
-    # plt.show()
-
     # Define model
 
     class CNN(nn.Module):
@@ -126,14 +105,14 @@ def run_dense_bnn(gpu=True):
         @nn.compact
         def __call__(self, x):
             
-            x = nn.Conv(features=32, kernel_size=(3, 3))(x)
+            x = nn.Conv(features=8, kernel_size=(3, 3))(x)
             x = nn.softplus(x)
             x = nn.avg_pool(x, window_shape=(2, 2), strides=(2, 2))
-            x = nn.Conv(features=64, kernel_size=(3, 3))(x)
+            x = nn.Conv(features=16, kernel_size=(3, 3))(x)
             x = nn.softplus(x)
             x = nn.avg_pool(x, window_shape=(2, 2), strides=(2, 2))
             x = x.reshape((x.shape[0], -1))  # flatten
-            x = nn.Dense(features=128)(x)
+            x = nn.Dense(features=64)(x)
             x = nn.softplus(x)
             x = nn.Dense(features=10)(x)
             x = nn.softmax(x)
@@ -149,14 +128,14 @@ def run_dense_bnn(gpu=True):
             "CNN", 
             module, 
             prior = {
-            "Conv_0.bias": dist.Normal(0, 100), 
-            "Conv_0.kernel": dist.Normal(0, 100), 
-            "Conv_1.bias": dist.Normal(0, 100), 
-            "Conv_1.kernel": dist.Normal(0, 100), 
-            "Dense_0.bias": dist.Normal(0, 100), 
-            "Dense_0.kernel": dist.Normal(0, 100), 
-            "Dense_1.bias": dist.Normal(0, 100), 
-            "Dense_1.kernel": dist.Normal(0, 100),
+            "Conv_0.bias": dist.Normal(0, 10), 
+            "Conv_0.kernel": dist.Normal(0, 10), 
+            "Conv_1.bias": dist.Normal(0, 10), 
+            "Conv_1.kernel": dist.Normal(0, 10), 
+            "Dense_0.bias": dist.Normal(0, 10), 
+            "Dense_0.kernel": dist.Normal(0, 10), 
+            "Dense_1.bias": dist.Normal(0, 10), 
+            "Dense_1.kernel": dist.Normal(0, 10),
             # "Dense_3.bias": dist.Normal(0, 10), 
             # "Dense_3.kernel": dist.Normal(0, 10),
             # "Dense_3.bias": dist.Normal(0, 10), 
@@ -169,15 +148,6 @@ def run_dense_bnn(gpu=True):
                 
         numpyro.sample("y_pred", dist.Multinomial(total_count=1, probs=net(x)), obs=y)
 
-    # model2 = CNN()
-    # batch = train_x_flat[0]  # (N, H, W, C) format
-    # variables = model2.init(jax.random.PRNGKey(42), batch)
-    # output = model2.apply(variables, batch)      
-    # print(output.shape)
-
-    batch = train_x[0, :]
-
-    print(batch.shape)
 
     # Initialize parameters 
 
@@ -206,10 +176,6 @@ def run_dense_bnn(gpu=True):
 
     print("Total parameters: ", total_params)
 
-    init_new["Dense_0"]["kernel"].shape
-
-    init_new["Dense_1"]["kernel"].shape
-
     # Initialize MCMC
 
     # kernel = NUTS(model, init_strategy=init_to_value(values=init_new))
@@ -224,11 +190,6 @@ def run_dense_bnn(gpu=True):
     )
 
     # Run MCMC
-
-    # mcmc.run(rng_key, temp_ds['image'], y_train, init_params=init)
-    # mcmc.run(rng_key, temp_ds['image'], y_train, init_params=init_new)
-    # mcmc.run(rng_key, temp_ds['image'], y_train, init_params=init_new)
-    # mcmc.run(rng_key, temp_ds['image'], y_train)
 
     mcmc.run(rng_key, train_x, y_train)
 
@@ -277,4 +238,4 @@ if __name__ == "__main__":
     parser.add_argument("--gpu", type=bool, default=False)
     args = parser.parse_args()
     
-    run_dense_bnn(args.gpu)
+    run_conv_bnn(args.gpu)
