@@ -185,7 +185,7 @@ def run_dense_bnn(gpu=True):
     batch = train_x[0]  # (N, H, W, C) format
     variables = model2.init(jax.random.PRNGKey(42), batch)
     output = model2.apply(variables, batch)      
-    print(output.shape)
+    print("Output shape: ", output.shape)
     init = flax.core.unfreeze(variables)["params"]
 
     # Create more reasonable initial values by sampling from the prior
