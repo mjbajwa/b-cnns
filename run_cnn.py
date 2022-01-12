@@ -163,7 +163,7 @@ def run_dense_bnn(gpu=True):
             # "Dense_3.kernel": dist.Normal(0, 10),
             },
             
-            input_shape=(3072, )
+            input_shape=(1, 32, 32, 3)
         
         )
                 
