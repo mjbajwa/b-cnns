@@ -215,9 +215,10 @@ if __name__ == "__main__":
     # Parse arguments
 
     parser = argparse.ArgumentParser(description="Convolutional Bayesian Neural Networks for CIFAR-10")
-    parser.add_argument("--train_index", type=bool, default=False)
-    parser.add_argument("--num_warmup", type=bool, default=False)
-    parser.add_argument("--num_samples", type=bool, default=False)
+    parser = argparse.ArgumentParser(description="Convolutional Bayesian Neural Networks for CIFAR-10")
+    parser.add_argument("--train_index", type=float, default=50000)
+    parser.add_argument("--num_warmup", type=float, default=100)
+    parser.add_argument("--num_samples", type=float, default=100)
     parser.add_argument("--gpu", type=bool, default=False)
     args = parser.parse_args()
 
