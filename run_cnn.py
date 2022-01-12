@@ -126,18 +126,18 @@ def run_dense_bnn(gpu=True):
         @nn.compact
         def __call__(self, x):
             
+            x = nn.Conv(features=32, kernel_size=(3, 3))(x)
+            x = nn.relu(x)
+            x = nn.avg_pool(x, window_shape=(2, 2), strides=(2, 2))
             x = nn.Conv(features=64, kernel_size=(3, 3))(x)
-            x = nn.softplus(x)
-            x = nn.max_pool(x, window_shape=(2, 2), strides=(2, 2))
-            x = nn.Conv(features=128, kernel_size=(3, 3))(x)
-            x = nn.softplus(x)
-            x = nn.max_pool(x, window_shape=(2, 2), strides=(2, 2))
-            x = x.reshape(x.shape[0], -1)  # flatten
-            x = nn.Dense(features=32)(x)
-            x = nn.softplus(x)
+            x = nn.relu(x)
+            x = nn.avg_pool(x, window_shape=(2, 2), strides=(2, 2))
+            x = x.reshape((x.shape[0], -1))  # flatten
+            x = nn.Dense(features=256)(x)
+            x = nn.relu(x)
             x = nn.Dense(features=10)(x)
-            x = nn.softmax(x)
-            
+            x = nn.log_softmax(x)
+                
             return x
         
 
@@ -167,7 +167,7 @@ def run_dense_bnn(gpu=True):
         
         )
                 
-        numpyro.sample("y_pred", dist.Multinomial(total_count=1, probs=net(x)), obs=y)
+        numpyro.sample("y_pred", dist.Multinomial(total_count=1, probs=jnp.exp(net(x))), obs=y)
 
     # model2 = CNN()
     # batch = train_x_flat[0]  # (N, H, W, C) format
