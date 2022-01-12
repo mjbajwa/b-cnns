@@ -30,7 +30,7 @@ def load_cifar10_dataset(train_index=50000, flatten=False):
     temp_ds = {}
     temp_ds['image'] = train_ds['image'][0:train_index]
     temp_ds['label'] = train_ds['label'][0:train_index]
-    y_train = y_train_all[0:TRAIN_IDX]
+    y_train = y_train_all[0:train_index]
 
     if flatten:
 
