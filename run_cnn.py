@@ -1,27 +1,36 @@
 # -*- coding: utf-8 -*-
 
-import argparse
-import os
+# !pip install --upgrade pip
+# !pip install numpyro jax jaxlib flax scikit-learn
+# Run the following in shell before executing: export XLA_PYTHON_CLIENT_MEM_FRACTION=.7
 
-import flax
-import flax.linen as nn
-import jax
-import jax.numpy as jnp
-import jax.random as random
-import jax.tools.colab_tpu
-import numpy as np
-import numpyro
+# !export XLA_PYTHON_CLIENT_MEM_FRACTION=.5
+
+import matplotlib.pyplot as plt
 import numpyro.distributions as dist
-import tensorflow.compat.v2 as tf
-import tensorflow_datasets as tfds
+import numpyro
+import flax.linen as nn
 import tqdm
-from numpyro.contrib.module import random_flax_module
-from numpyro.infer import MCMC, NUTS, Predictive, init_to_feasible
+import numpy as np
+import os
+import jax.numpy as jnp
+import flax
+import jax
+import jax.random as random
+import tensorflow_datasets as tfds
+import tensorflow.compat.v2 as tf
+import jax.tools.colab_tpu
+import argparse
+
 from sklearn.preprocessing import LabelBinarizer
+from numpyro.infer import init_to_value, Predictive
+from numpyro.infer import init_to_feasible, NUTS, MCMC, HMC
+from numpyro.contrib.module import random_flax_module, flax_module
+from numpyro.infer import init_to_feasible
 
-from utils.load_data import load_cifar10_dataset
+# jax.tools.colab_tpu.setup_tpu()
 
-def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
+def run_conv_bnn(gpu=True):
 
     # Administrative stuff
 
@@ -52,11 +61,11 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
     
     np.random.seed(0)
 
-    # Declare constants for easy checks
+    # CONSTANTS 
 
-    TRAIN_IDX = train_index
-    NUM_WARMUP = num_warmup
-    NUM_SAMPLES = num_samples
+    TRAIN_IDX = 50000
+    NUM_WARMUP = 100
+    NUM_SAMPLES = 100
 
     # Create keys for numpyro
 
@@ -64,58 +73,90 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
 
     # Load CIFAR-10 datasets
 
-    train_x, test_x, y_train, y_test = load_cifar10_dataset(train_index=TRAIN_IDX, flatten=True)
-    
+    # Training dataset
+
+    train_ds = tfds.as_numpy(tfds.load(
+        'cifar10', split=tfds.Split.TRAIN, batch_size=-1))
+    train_ds = {'image': train_ds['image'].astype(jnp.float32) / 255.,
+                'label': train_ds['label'].astype(jnp.int32)}
+    y_train_all = LabelBinarizer().fit_transform(train_ds['label'])
+
+    # Test dataset
+
+    test_ds = tfds.as_numpy(tfds.load('cifar10', split=tfds.Split.TEST, batch_size=-1))
+    test_ds = {'image': test_ds['image'].astype(jnp.float32) / 255.,
+            'label': test_ds['label'].astype(jnp.int32)}
+    y_test = LabelBinarizer().fit_transform(test_ds['label'])
+
+    # Filter to the first 1000 images for configuration
+
+    temp_ds = {}
+    temp_ds['image'] = train_ds['image'][0:TRAIN_IDX]
+    temp_ds['label'] = train_ds['label'][0:TRAIN_IDX]
+    y_train = y_train_all[0:TRAIN_IDX]
+
+    train_x = train_ds['image']
+    test_x = test_ds['image']
+
     # Define model
 
-    class DNN(nn.Module):
+    class CNN(nn.Module):
             
         @nn.compact
         def __call__(self, x):
             
-            x = nn.Dense(features=128)(x)
-            x = nn.softplus(x) # TODO: check tanh vs softplus
-            x = nn.Dense(features=256)(x)
-            x = nn.softplus(x) # TODO: check tanh vs softplus
+            x = nn.Conv(features=8, kernel_size=(3, 3))(x)
+            x = nn.softplus(x)
+            x = nn.avg_pool(x, window_shape=(2, 2), strides=(2, 2))
+            x = nn.Conv(features=16, kernel_size=(3, 3))(x)
+            x = nn.softplus(x)
+            x = nn.avg_pool(x, window_shape=(2, 2), strides=(2, 2))
+            x = x.reshape((x.shape[0], -1))  # flatten
+            x = nn.Dense(features=64)(x)
+            x = nn.softplus(x)
             x = nn.Dense(features=10)(x)
             x = nn.softmax(x)
-            
+                
             return x
         
 
     def model(x, y):
         
-        module = DNN()
+        module = CNN()
         
         net = random_flax_module(
-            "DNN", 
+            "CNN", 
             module, 
             prior = {
-            "Dense_0.bias": dist.Normal(0, 100), 
-            "Dense_0.kernel": dist.Normal(0, 100), 
-            "Dense_1.bias": dist.Normal(0, 100), 
-            "Dense_1.kernel": dist.Normal(0, 100),
-            "Dense_2.bias": dist.Normal(0, 100), 
-            "Dense_2.kernel": dist.Normal(0, 100),
+            "Conv_0.bias": dist.Normal(0, 10), 
+            "Conv_0.kernel": dist.Normal(0, 10), 
+            "Conv_1.bias": dist.Normal(0, 10), 
+            "Conv_1.kernel": dist.Normal(0, 10), 
+            "Dense_0.bias": dist.Normal(0, 10), 
+            "Dense_0.kernel": dist.Normal(0, 10), 
+            "Dense_1.bias": dist.Normal(0, 10), 
+            "Dense_1.kernel": dist.Normal(0, 10),
             # "Dense_3.bias": dist.Normal(0, 10), 
             # "Dense_3.kernel": dist.Normal(0, 10),
             # "Dense_3.bias": dist.Normal(0, 10), 
             # "Dense_3.kernel": dist.Normal(0, 10),
             },
             
-            input_shape=(3072, )
+            input_shape=(1, 32, 32, 3)
         
         )
                 
         numpyro.sample("y_pred", dist.Multinomial(total_count=1, probs=net(x)), obs=y)
 
+
     # Initialize parameters 
 
-    model2 = DNN()
-    batch = train_x[0]  # (N, H, W, C) format
+    model2 = CNN()
+    batch = train_x[0:1, ]  # (N, H, W, C) format
+    print("Batch shape: ", batch.shape)
     variables = model2.init(jax.random.PRNGKey(42), batch)
     output = model2.apply(variables, batch)      
-    print(output.shape)
+    print("Output shape: ", output.shape)
     init = flax.core.unfreeze(variables)["params"]
 
     # Create more reasonable initial values by sampling from the prior
@@ -186,21 +227,15 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
     print("Test accuracy: ", accuracy)
 
     # all_samples = mcmc.get_samples()
+
     # plt.plot(all_samples["CNN/Conv_0.kernel"][:, 3,3,3,16], "o")
     # plt.plot(all_samples["CNN/Dense_0.kernel"][:, 10], "o")
+
     # mcmc.print_summary()
 
 if __name__ == "__main__":
-    
-    # Parse arguments
-
     parser = argparse.ArgumentParser(description="Convolutional Bayesian Neural Networks for CIFAR-10")
-    parser.add_argument("--train_index", type=bool, default=False)
-    parser.add_argument("--num_warmup", type=bool, default=False)
-    parser.add_argument("--num_samples", type=bool, default=False)
     parser.add_argument("--gpu", type=bool, default=False)
     args = parser.parse_args()
-
-    # Run main function
     
-    run_dense_bnn(args.train_index, args.num_warmup, args.num_samples, args.gpu)
+    run_conv_bnn(args.gpu)
