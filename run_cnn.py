@@ -183,6 +183,7 @@ def run_dense_bnn(gpu=True):
 
     model2 = CNN()
     batch = train_x[0]  # (N, H, W, C) format
+    print("Batch shape: ", batch.shape)
     variables = model2.init(jax.random.PRNGKey(42), batch)
     output = model2.apply(variables, batch)      
     print("Output shape: ", output.shape)
