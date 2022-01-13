@@ -28,6 +28,8 @@ from numpyro.infer import init_to_feasible, NUTS, MCMC, HMC
 from numpyro.contrib.module import random_flax_module, flax_module
 from numpyro.infer import init_to_feasible
 
+from utils.load_data import load_cifar10_dataset
+
 # jax.tools.colab_tpu.setup_tpu()
 
 def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
@@ -74,7 +76,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
 
     # Load CIFAR-10 datasets
 
-    train_x, test_x, y_train, y_test = load_cifar10_dataset(train_index=TRAIN_IDX, flatten=True)
+    train_x, test_x, y_train, y_test, temp_ds, test_ds = load_cifar10_dataset(train_index=TRAIN_IDX, flatten=True)
     
     # Define model
 
@@ -139,7 +141,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
     # Initialize parameters 
 
     model2 = DNN()
-    batch = train_x_flat[0]  # (N, H, W, C) format
+    batch = train_x[0]  # (N, H, W, C) format
     variables = model2.init(jax.random.PRNGKey(42), batch)
     output = model2.apply(variables, batch)      
     print(output.shape)
@@ -176,7 +178,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
 
     # Run MCMC
 
-    mcmc.run(rng_key, train_x_flat, y_train)
+    mcmc.run(rng_key, train_x, y_train)
 
     ### Prediction Utilities
 
@@ -190,7 +192,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
 
     # Train accuracy calculation
 
-    train_preds = Predictive(model, mcmc.get_samples())(jax.random.PRNGKey(2), train_x_flat, y=None)["y_pred"]
+    train_preds = Predictive(model, mcmc.get_samples())(jax.random.PRNGKey(2), train_x, y=None)["y_pred"]
     train_preds_ave = jnp.mean(train_preds, axis=0)
     train_preds_index = jnp.argmax(train_preds_ave, axis=1)
     accuracy = (temp_ds["label"] == train_preds_index).mean()*100
@@ -198,7 +200,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
 
     # Test accuracy calculation
 
-    test_preds = Predictive(model, mcmc.get_samples())(jax.random.PRNGKey(2), test_x_flat, y=None)["y_pred"]
+    test_preds = Predictive(model, mcmc.get_samples())(jax.random.PRNGKey(2), test_x, y=None)["y_pred"]
     test_preds_ave = jnp.mean(test_preds, axis=0)
     test_preds_index = jnp.argmax(test_preds_ave, axis=1)
     accuracy = (test_ds["label"] == test_preds_index).mean()*100
@@ -215,9 +217,10 @@ if __name__ == "__main__":
     # Parse arguments
 
     parser = argparse.ArgumentParser(description="Convolutional Bayesian Neural Networks for CIFAR-10")
-    parser.add_argument("--train_index", type=bool, default=False)
-    parser.add_argument("--num_warmup", type=bool, default=False)
-    parser.add_argument("--num_samples", type=bool, default=False)
+    parser = argparse.ArgumentParser(description="Convolutional Bayesian Neural Networks for CIFAR-10")
+    parser.add_argument("--train_index", type=float, default=50000)
+    parser.add_argument("--num_warmup", type=int, default=100)
+    parser.add_argument("--num_samples", type=int, default=100)
     parser.add_argument("--gpu", type=bool, default=False)
     args = parser.parse_args()
 

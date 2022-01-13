@@ -52,4 +52,4 @@ def load_cifar10_dataset(train_index=50000, flatten=False):
         train_x = train_ds['image']
         test_x = test_ds['image']
 
-    return train_x, test_x, y_train, y_test
+    return train_x, test_x, y_train, y_test, temp_ds, test_ds

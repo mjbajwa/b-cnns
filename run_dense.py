@@ -64,7 +64,9 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
 
     # Load CIFAR-10 datasets
 
-    train_x, test_x, y_train, y_test = load_cifar10_dataset(train_index=TRAIN_IDX, flatten=True)
+    train_x, test_x, y_train, y_test, temp_ds, test_ds = load_cifar10_dataset(train_index=TRAIN_IDX, flatten=True)
+    print(train_x.shape)
+    print(test_x.shape)
     
     # Define model
 
@@ -195,9 +197,9 @@ if __name__ == "__main__":
     # Parse arguments
 
     parser = argparse.ArgumentParser(description="Convolutional Bayesian Neural Networks for CIFAR-10")
-    parser.add_argument("--train_index", type=bool, default=False)
-    parser.add_argument("--num_warmup", type=bool, default=False)
-    parser.add_argument("--num_samples", type=bool, default=False)
+    parser.add_argument("--train_index", type=int, default=50000)
+    parser.add_argument("--num_warmup", type=int, default=100)
+    parser.add_argument("--num_samples", type=int, default=100)
     parser.add_argument("--gpu", type=bool, default=False)
     args = parser.parse_args()
 
