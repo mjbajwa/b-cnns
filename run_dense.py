@@ -76,9 +76,9 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
         def __call__(self, x):
             
             x = nn.Dense(features=128)(x)
-            x = nn.softplus(x) # TODO: check tanh vs softplus
+            x = nn.swish(x) # TODO: check tanh vs softplus
             x = nn.Dense(features=256)(x)
-            x = nn.softplus(x) # TODO: check tanh vs softplus
+            x = nn.swish(x) # TODO: check tanh vs softplus
             x = nn.Dense(features=10)(x)
             x = nn.softmax(x)
             
@@ -140,7 +140,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
     # Initialize MCMC
 
     # kernel = NUTS(model, init_strategy=init_to_value(values=init_new))
-    kernel = NUTS(model, init_strategy=init_to_feasible())
+    kernel = NUTS(model, init_strategy=init_to_feasible(), target_accept_prob=0.9)
     mcmc = MCMC(  
         kernel,
         num_warmup=NUM_WARMUP,
