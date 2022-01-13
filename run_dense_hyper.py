@@ -28,6 +28,8 @@ from numpyro.infer import init_to_feasible, NUTS, MCMC, HMC
 from numpyro.contrib.module import random_flax_module, flax_module
 from numpyro.infer import init_to_feasible
 
+from utils.load_data import load_cifar10_dataset
+
 # jax.tools.colab_tpu.setup_tpu()
 
 def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
