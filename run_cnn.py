@@ -1,36 +1,29 @@
 # -*- coding: utf-8 -*-
 
-# !pip install --upgrade pip
-# !pip install numpyro jax jaxlib flax scikit-learn
-# Run the following in shell before executing: export XLA_PYTHON_CLIENT_MEM_FRACTION=.7
-
-# !export XLA_PYTHON_CLIENT_MEM_FRACTION=.5
-
-import matplotlib.pyplot as plt
-import numpyro.distributions as dist
-import numpyro
-import flax.linen as nn
-import tqdm
-import numpy as np
-import os
-import jax.numpy as jnp
-import flax
-import jax
-import jax.random as random
-import tensorflow_datasets as tfds
-import tensorflow.compat.v2 as tf
-import jax.tools.colab_tpu
 import argparse
+import os
 
+import flax
+import flax.linen as nn
+import jax
+import jax.numpy as jnp
+import jax.random as random
+import jax.tools.colab_tpu
+import numpy as np
+import numpyro
+import numpyro.distributions as dist
+import tensorflow.compat.v2 as tf
+import tensorflow_datasets as tfds
+import tqdm
+from numpyro.contrib.module import random_flax_module
+from numpyro.infer import MCMC, NUTS, Predictive, init_to_feasible
 from sklearn.preprocessing import LabelBinarizer
-from numpyro.infer import init_to_value, Predictive
-from numpyro.infer import init_to_feasible, NUTS, MCMC, HMC
-from numpyro.contrib.module import random_flax_module, flax_module
-from numpyro.infer import init_to_feasible
+
+from utils.load_data import load_cifar10_dataset
 
 # jax.tools.colab_tpu.setup_tpu()
 
-def run_conv_bnn(gpu=True):
+def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
 
     # Administrative stuff
 
@@ -61,11 +54,11 @@ def run_conv_bnn(gpu=True):
     
     np.random.seed(0)
 
-    # CONSTANTS 
+    # Declare constants for easy checks
 
-    TRAIN_IDX = 50000
-    NUM_WARMUP = 100
-    NUM_SAMPLES = 100
+    TRAIN_IDX = train_index
+    NUM_WARMUP = num_warmup
+    NUM_SAMPLES = num_samples
 
     # Create keys for numpyro
 
@@ -73,31 +66,8 @@ def run_conv_bnn(gpu=True):
 
     # Load CIFAR-10 datasets
 
-    # Training dataset
-
-    train_ds = tfds.as_numpy(tfds.load(
-        'cifar10', split=tfds.Split.TRAIN, batch_size=-1))
-    train_ds = {'image': train_ds['image'].astype(jnp.float32) / 255.,
-                'label': train_ds['label'].astype(jnp.int32)}
-    y_train_all = LabelBinarizer().fit_transform(train_ds['label'])
-
-    # Test dataset
-
-    test_ds = tfds.as_numpy(tfds.load('cifar10', split=tfds.Split.TEST, batch_size=-1))
-    test_ds = {'image': test_ds['image'].astype(jnp.float32) / 255.,
-            'label': test_ds['label'].astype(jnp.int32)}
-    y_test = LabelBinarizer().fit_transform(test_ds['label'])
-
-    # Filter to the first 1000 images for configuration
-
-    temp_ds = {}
-    temp_ds['image'] = train_ds['image'][0:TRAIN_IDX]
-    temp_ds['label'] = train_ds['label'][0:TRAIN_IDX]
-    y_train = y_train_all[0:TRAIN_IDX]
-
-    train_x = train_ds['image']
-    test_x = test_ds['image']
-
+    train_x, test_x, y_train, y_test, temp_ds, test_ds = load_cifar10_dataset(train_index=TRAIN_IDX, flatten=False)
+    
     # Define model
 
     class CNN(nn.Module):
@@ -105,16 +75,16 @@ def run_conv_bnn(gpu=True):
         @nn.compact
         def __call__(self, x):
             
-            x = nn.Conv(features=8, kernel_size=(3, 3))(x)
-            x = nn.softplus(x)
-            x = nn.avg_pool(x, window_shape=(2, 2), strides=(2, 2))
-            x = nn.Conv(features=16, kernel_size=(3, 3))(x)
-            x = nn.softplus(x)
-            x = nn.avg_pool(x, window_shape=(2, 2), strides=(2, 2))
+            x = nn.Conv(name="conv_1", features=16, kernel_size=(3, 3))(x)
+            x = nn.swish(x)
+            x = nn.max_pool(x, window_shape=(2, 2), strides=(2, 2))
+            x = nn.Conv(name="conv_2", features=32, kernel_size=(3, 3))(x)
+            x = nn.swish(x)
+            x = nn.max_pool(x, window_shape=(2, 2), strides=(2, 2))
             x = x.reshape((x.shape[0], -1))  # flatten
-            x = nn.Dense(features=64)(x)
-            x = nn.softplus(x)
-            x = nn.Dense(features=10)(x)
+            x = nn.Dense(name="dense_2", features=64)(x)
+            x = nn.swish(x)
+            x = nn.Dense(name="dense_3", features=10)(x)
             x = nn.softmax(x)
                 
             return x
@@ -128,18 +98,14 @@ def run_conv_bnn(gpu=True):
             "CNN", 
             module, 
             prior = {
-            "Conv_0.bias": dist.Normal(0, 10), 
-            "Conv_0.kernel": dist.Normal(0, 10), 
-            "Conv_1.bias": dist.Normal(0, 10), 
-            "Conv_1.kernel": dist.Normal(0, 10), 
-            "Dense_0.bias": dist.Normal(0, 10), 
-            "Dense_0.kernel": dist.Normal(0, 10), 
-            "Dense_1.bias": dist.Normal(0, 10), 
-            "Dense_1.kernel": dist.Normal(0, 10),
-            # "Dense_3.bias": dist.Normal(0, 10), 
-            # "Dense_3.kernel": dist.Normal(0, 10),
-            # "Dense_3.bias": dist.Normal(0, 10), 
-            # "Dense_3.kernel": dist.Normal(0, 10),
+            "conv_0.bias": dist.Normal(0, 100), 
+            "conv_0.kernel": dist.Normal(0, 100), 
+            "conv_1.bias": dist.Normal(0, 100), 
+            "conv_1.kernel": dist.Normal(0, 100), 
+            "dense_2.bias": dist.Normal(0, 100), 
+            "dense_2.kernel": dist.Normal(0, 100), 
+            "dense_2.bias": dist.Normal(0, 100), 
+            "dense_2.kernel": dist.Normal(0, 100),
             },
             
             input_shape=(1, 32, 32, 3)
@@ -179,14 +145,13 @@ def run_conv_bnn(gpu=True):
     # Initialize MCMC
 
     # kernel = NUTS(model, init_strategy=init_to_value(values=init_new))
-    kernel = NUTS(model, init_strategy=init_to_feasible())
+    kernel = NUTS(model, init_strategy=init_to_feasible(), target_accept_prob=0.90)
     mcmc = MCMC(  
         kernel,
         num_warmup=NUM_WARMUP,
         num_samples=NUM_SAMPLES,
         num_chains=1,
         progress_bar=True,
-        # jit_model_args=True,
     )
 
     # Run MCMC
@@ -234,8 +199,14 @@ def run_conv_bnn(gpu=True):
     # mcmc.print_summary()
 
 if __name__ == "__main__":
+    
     parser = argparse.ArgumentParser(description="Convolutional Bayesian Neural Networks for CIFAR-10")
+    parser.add_argument("--train_index", type=float, default=50000)
+    parser.add_argument("--num_warmup", type=int, default=100)
+    parser.add_argument("--num_samples", type=int, default=100)
     parser.add_argument("--gpu", type=bool, default=False)
     args = parser.parse_args()
+
+    # Run main function
     
-    run_conv_bnn(args.gpu)
+    run_conv_bnn(args.train_index, args.num_warmup, args.num_samples, args.gpu)
