@@ -201,7 +201,7 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Convolutional Bayesian Neural Networks for CIFAR-10")
-    parser.add_argument("--train_index", type=float, default=50000)
+    parser.add_argument("--train_index", type=int, default=50000)
     parser.add_argument("--num_warmup", type=int, default=100)
     parser.add_argument("--num_samples", type=int, default=100)
     parser.add_argument("--gpu", type=bool, default=False)
