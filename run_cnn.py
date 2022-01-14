@@ -13,11 +13,8 @@ import numpy as np
 import numpyro
 import numpyro.distributions as dist
 import tensorflow.compat.v2 as tf
-import tensorflow_datasets as tfds
-import tqdm
 from numpyro.contrib.module import random_flax_module
 from numpyro.infer import MCMC, NUTS, Predictive, init_to_feasible
-from sklearn.preprocessing import LabelBinarizer
 
 from utils.load_data import load_cifar10_dataset
 
@@ -76,14 +73,14 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
         def __call__(self, x):
             
             x = nn.Conv(name="conv_1", features=8, kernel_size=(3, 3))(x)
-            x = nn.softplus(x)
+            x = nn.tanh(x)
             x = nn.max_pool(x, window_shape=(2, 2), strides=(2, 2))
             x = nn.Conv(name="conv_2", features=16, kernel_size=(3, 3))(x)
-            x = nn.softplus(x)
+            x = nn.tanh(x)
             x = nn.max_pool(x, window_shape=(2, 2), strides=(2, 2))
             x = x.reshape((x.shape[0], -1))  # flatten
             x = nn.Dense(name="dense_2", features=64)(x)
-            x = nn.softplus(x)
+            x = nn.tanh(x)
             x = nn.Dense(name="dense_3", features=10)(x)
             x = nn.softmax(x)
                 
