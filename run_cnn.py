@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import argparse
 import os
 
@@ -101,8 +99,8 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
             "conv_1.kernel": dist.Normal(0, 100), 
             "dense_2.bias": dist.Normal(0, 100), 
             "dense_2.kernel": dist.Normal(0, 100), 
-            "dense_2.bias": dist.Normal(0, 100), 
-            "dense_2.kernel": dist.Normal(0, 100),
+            "dense_3.bias": dist.Normal(0, 100), 
+            "dense_3.kernel": dist.Normal(0, 100),
             },
             
             input_shape=(1, 32, 32, 3)
@@ -189,7 +187,6 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
     print("Test accuracy: ", accuracy)
 
     # all_samples = mcmc.get_samples()
-
     # plt.plot(all_samples["CNN/Conv_0.kernel"][:, 3,3,3,16], "o")
     # plt.plot(all_samples["CNN/Dense_0.kernel"][:, 10], "o")
 
