@@ -97,10 +97,10 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
             "Conv_0.kernel": dist.Normal(0, 100), 
             "Conv_1.bias": dist.Normal(0, 100), 
             "Conv_1.kernel": dist.Normal(0, 100), 
-            "Dense_2.bias": dist.Normal(0, 100), 
-            "Dense_2.kernel": dist.Normal(0, 100), 
-            "Dense_3.bias": dist.Normal(0, 100), 
-            "Dense_3.kernel": dist.Normal(0, 100),
+            "Dense_0.bias": dist.Normal(0, 100), 
+            "Dense_0.kernel": dist.Normal(0, 100), 
+            "Dense_1.bias": dist.Normal(0, 100), 
+            "Dense_1.kernel": dist.Normal(0, 100),
             },
             
             input_shape=(1, 32, 32, 3)
@@ -140,7 +140,7 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
     # Initialize MCMC
 
     # kernel = NUTS(model, init_strategy=init_to_value(values=init_new))
-    kernel = NUTS(model, init_strategy=init_to_feasible(), target_accept_prob=0.70)
+    kernel = NUTS(model, init_strategy=init_to_feasible(), target_accept_prob=0.80)
     mcmc = MCMC(  
         kernel,
         num_warmup=NUM_WARMUP,
