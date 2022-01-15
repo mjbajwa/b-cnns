@@ -1,32 +1,23 @@
 # -*- coding: utf-8 -*-
 
-# !pip install --upgrade pip
-# !pip install numpyro jax jaxlib flax scikit-learn
-# Run the following in shell before executing: export XLA_PYTHON_CLIENT_MEM_FRACTION=.7
-
-# !export XLA_PYTHON_CLIENT_MEM_FRACTION=.5
-
-import matplotlib.pyplot as plt
-import numpyro.distributions as dist
-import numpyro
-import flax.linen as nn
-import tqdm
-import numpy as np
-import os
-import jax.numpy as jnp
-import flax
-import jax
-import jax.random as random
-import tensorflow_datasets as tfds
-import tensorflow.compat.v2 as tf
-import jax.tools.colab_tpu
 import argparse
+import os
 
+import flax
+import flax.linen as nn
+import jax
+import jax.numpy as jnp
+import jax.random as random
+import jax.tools.colab_tpu
+import numpy as np
+import numpyro
+import numpyro.distributions as dist
+import tensorflow.compat.v2 as tf
+import tensorflow_datasets as tfds
+import tqdm
+from numpyro.contrib.module import random_flax_module
+from numpyro.infer import MCMC, NUTS, Predictive, init_to_feasible
 from sklearn.preprocessing import LabelBinarizer
-from numpyro.infer import init_to_value, Predictive
-from numpyro.infer import init_to_feasible, NUTS, MCMC, HMC
-from numpyro.contrib.module import random_flax_module, flax_module
-from numpyro.infer import init_to_feasible
 
 from utils.load_data import load_cifar10_dataset
 
@@ -86,9 +77,9 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
         def __call__(self, x):
             
             x = nn.Dense(features=128)(x)
-            x = nn.softplus(x) # TODO: check tanh vs softplus
+            x = nn.swish(x) # TODO: check tanh vs softplus
             x = nn.Dense(features=256)(x)
-            x = nn.softplus(x) # TODO: check tanh vs softplus
+            x = nn.swish(x) # TODO: check tanh vs softplus
             x = nn.Dense(features=10)(x)
             x = nn.softmax(x)
             
@@ -166,7 +157,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
 
     # Initialize MCMC
 
-    kernel = NUTS(model, init_strategy=init_to_feasible())
+    kernel = NUTS(model, init_strategy=init_to_feasible(), target_accept_prob=0.8)
     mcmc = MCMC(  
         kernel,
         num_warmup=NUM_WARMUP,
@@ -217,8 +208,7 @@ if __name__ == "__main__":
     # Parse arguments
 
     parser = argparse.ArgumentParser(description="Convolutional Bayesian Neural Networks for CIFAR-10")
-    parser = argparse.ArgumentParser(description="Convolutional Bayesian Neural Networks for CIFAR-10")
-    parser.add_argument("--train_index", type=float, default=50000)
+    parser.add_argument("--train_index", type=int, default=50000)
     parser.add_argument("--num_warmup", type=int, default=100)
     parser.add_argument("--num_samples", type=int, default=100)
     parser.add_argument("--gpu", type=bool, default=False)
