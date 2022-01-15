@@ -92,16 +92,16 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
         net = random_flax_module(
             "CNN", 
             module, 
-            prior = {
-            "Conv_0.bias": dist.Normal(0, 100), 
-            "Conv_0.kernel": dist.Normal(0, 100), 
-            "Conv_1.bias": dist.Normal(0, 100), 
-            "Conv_1.kernel": dist.Normal(0, 100), 
-            "Dense_0.bias": dist.Normal(0, 100), 
-            "Dense_0.kernel": dist.Normal(0, 100), 
-            "Dense_1.bias": dist.Normal(0, 100), 
-            "Dense_1.kernel": dist.Normal(0, 100),
-            },
+            prior = dist.Normal(0, 100),
+            # "Conv_0.bias": dist.Normal(0, 100), 
+            # "Conv_0.kernel": dist.Normal(0, 100), 
+            # "Conv_1.bias": dist.Normal(0, 100), 
+            # "Conv_1.kernel": dist.Normal(0, 100), 
+            # "Dense_0.bias": dist.Normal(0, 100), 
+            # "Dense_0.kernel": dist.Normal(0, 100), 
+            # "Dense_1.bias": dist.Normal(0, 100), 
+            # "Dense_1.kernel": dist.Normal(0, 100),
+            # },
             
             input_shape=(1, 32, 32, 3)
         
