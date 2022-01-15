@@ -70,16 +70,16 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
         @nn.compact
         def __call__(self, x):
             
-            x = nn.Conv(name="conv_1", features=8, kernel_size=(3, 3))(x)
+            x = nn.Conv(features=8, kernel_size=(3, 3))(x)
             x = nn.tanh(x)
             x = nn.max_pool(x, window_shape=(2, 2), strides=(2, 2))
-            x = nn.Conv(name="conv_2", features=16, kernel_size=(3, 3))(x)
+            x = nn.Conv(features=16, kernel_size=(3, 3))(x)
             x = nn.tanh(x)
             x = nn.max_pool(x, window_shape=(2, 2), strides=(2, 2))
             x = x.reshape((x.shape[0], -1))  # flatten
-            x = nn.Dense(name="dense_3", features=64)(x)
+            x = nn.Dense(features=32)(x)
             x = nn.tanh(x)
-            x = nn.Dense(name="dense_4", features=10)(x)
+            x = nn.Dense(features=10)(x)
             x = nn.softmax(x)
                 
             return x
@@ -93,14 +93,14 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
             "CNN", 
             module, 
             prior = {
-            "conv_1.bias": dist.Normal(0, 100), 
-            "conv_1.kernel": dist.Normal(0, 100), 
-            "conv_2.bias": dist.Normal(0, 100), 
-            "conv_2.kernel": dist.Normal(0, 100), 
-            "dense_3.bias": dist.Normal(0, 100), 
-            "dense_3.kernel": dist.Normal(0, 100), 
-            "dense_4.bias": dist.Normal(0, 100), 
-            "dense_4.kernel": dist.Normal(0, 100),
+            "Conv_0.bias": dist.Normal(0, 100), 
+            "Conv_0.kernel": dist.Normal(0, 100), 
+            "Conv_1.bias": dist.Normal(0, 100), 
+            "Conv_1.kernel": dist.Normal(0, 100), 
+            "Dense_2.bias": dist.Normal(0, 100), 
+            "Dense_2.kernel": dist.Normal(0, 100), 
+            "Dense_3.bias": dist.Normal(0, 100), 
+            "Dense_3.kernel": dist.Normal(0, 100),
             },
             
             input_shape=(1, 32, 32, 3)
