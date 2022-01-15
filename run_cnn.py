@@ -70,14 +70,14 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
         @nn.compact
         def __call__(self, x):
             
+            x = nn.Conv(features=8, kernel_size=(3, 3))(x)
+            x = nn.swish(x)
+            x = nn.avg_pool(x, window_shape=(2, 2), strides=(2, 2))
             x = nn.Conv(features=16, kernel_size=(3, 3))(x)
             x = nn.swish(x)
             x = nn.avg_pool(x, window_shape=(2, 2), strides=(2, 2))
-            x = nn.Conv(features=32, kernel_size=(3, 3))(x)
-            x = nn.swish(x)
-            x = nn.avg_pool(x, window_shape=(2, 2), strides=(2, 2))
             x = x.reshape((x.shape[0], -1))  # flatten
-            x = nn.Dense(features=64)(x)
+            x = nn.Dense(features=16)(x)
             x = nn.swish(x)
             x = nn.Dense(features=10)(x)
             x = nn.softmax(x)
