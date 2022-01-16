@@ -116,7 +116,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
             "Dense_0.kernel": dist.Normal(0, 1/jnp.sqrt(dense_0_w_prec)), 
             "Dense_1.bias": dist.Normal(0, 1/jnp.sqrt(dense_1_b_prec)), 
             "Dense_1.kernel": dist.Normal(0, 1/jnp.sqrt(dense_1_w_prec)),
-            "Dense_2.bias": dist.Normal(0, 1/jnp.sqrt(dense_2_b_prec)), 
+            "Dense_2.bias": dist.Normal(0, 100), 
             "Dense_2.kernel": dist.Normal(0, 1/jnp.sqrt(dense_2_w_prec)),
             # "Dense_3.bias": dist.Normal(0, 1/jnp.sqrt(dense_3_b_prec)), 
             # "Dense_3.kernel": dist.Normal(0, 1/jnp.sqrt(dense_3_w_prec)), 
@@ -159,7 +159,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
 
     # Initialize MCMC
 
-    kernel = NUTS(model, init_strategy=init_to_feasible(), target_accept_prob=0.8)
+    kernel = NUTS(model, init_strategy=init_to_feasible(), target_accept_prob=0.70)
     mcmc = MCMC(  
         kernel,
         num_warmup=NUM_WARMUP,
