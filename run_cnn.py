@@ -52,7 +52,7 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
     np.random.seed(0)
 
     os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false" 
-    os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".8"
+    # os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".8"
 
     # Declare constants for easy checks
 
