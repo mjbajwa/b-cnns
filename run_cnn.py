@@ -199,7 +199,7 @@ if __name__ == "__main__":
     parser.add_argument("--train_index", type=int, default=50000)
     parser.add_argument("--num_warmup", type=int, default=100)
     parser.add_argument("--num_samples", type=int, default=100)
-    parser.add_argument("--gpu", type=bool, default=True)
+    parser.add_argument("--gpu", type=bool, default=False)
     args = parser.parse_args()
 
     # Run main function
