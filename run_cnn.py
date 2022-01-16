@@ -27,7 +27,7 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
     
     # Disable tensorflow from using GPU
 
-    # tf.enable_v2_behavior()
+    tf.enable_v2_behavior()
     
     if gpu:
 
