@@ -72,14 +72,14 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
         @nn.compact
         def __call__(self, x):
             
-            x = nn.Conv(features=8, kernel_size=(3, 3))(x)
+            x = nn.Conv(features=32, kernel_size=(3, 3))(x)
             x = nn.swish(x)
             x = nn.avg_pool(x, window_shape=(2, 2), strides=(2, 2))
-            x = nn.Conv(features=16, kernel_size=(3, 3))(x)
+            x = nn.Conv(features=64, kernel_size=(3, 3))(x)
             x = nn.swish(x)
             x = nn.avg_pool(x, window_shape=(2, 2), strides=(2, 2))
             x = x.reshape((x.shape[0], -1))  # flatten
-            x = nn.Dense(features=16)(x)
+            x = nn.Dense(features=256)(x)
             x = nn.swish(x)
             x = nn.Dense(features=10)(x)
             x = nn.softmax(x)
@@ -94,19 +94,18 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
         net = random_flax_module(
             "CNN", 
             module, 
-            prior = dist.Normal(0, 100),
-            # "Conv_0.bias": dist.Normal(0, 100), 
-            # "Conv_0.kernel": dist.Normal(0, 100), 
-            # "Conv_1.bias": dist.Normal(0, 100), 
-            # "Conv_1.kernel": dist.Normal(0, 100), 
-            # "Dense_0.bias": dist.Normal(0, 100), 
-            # "Dense_0.kernel": dist.Normal(0, 100), 
-            # "Dense_1.bias": dist.Normal(0, 100), 
-            # "Dense_1.kernel": dist.Normal(0, 100),
-            # },
-            
+            # prior = dist.Normal(0, 100),
+            prior = {
+            "Conv_0.bias": dist.Normal(0, 100), 
+            "Conv_0.kernel": dist.Normal(0, 100), 
+            "Conv_1.bias": dist.Normal(0, 100), 
+            "Conv_1.kernel": dist.Normal(0, 100), 
+            "Dense_0.bias": dist.Normal(0, 100), 
+            "Dense_0.kernel": dist.Normal(0, 100), 
+            "Dense_1.bias": dist.Normal(0, 100), 
+            "Dense_1.kernel": dist.Normal(0, 100),
+            },
             input_shape=(1, 32, 32, 3)
-        
         )
                 
         numpyro.sample("y_pred", dist.Multinomial(total_count=1, probs=net(x)), obs=y)
@@ -114,30 +113,30 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     # Initialize parameters 
 
-    # model2 = CNN()
-    # batch = train_x[0:1, ]  # (N, H, W, C) format
-    # print("Batch shape: ", batch.shape)
-    # variables = model2.init(jax.random.PRNGKey(42), batch)
-    # output = model2.apply(variables, batch)      
-    # print("Output shape: ", output.shape)
-    # init = flax.core.unfreeze(variables)["params"]
+    model2 = CNN()
+    batch = train_x[0:1, ]  # (N, H, W, C) format
+    print("Batch shape: ", batch.shape)
+    variables = model2.init(jax.random.PRNGKey(42), batch)
+    output = model2.apply(variables, batch)      
+    print("Output shape: ", output.shape)
+    init = flax.core.unfreeze(variables)["params"]
 
     # Create more reasonable initial values by sampling from the prior
 
-    # prior_dist = dist.Normal(0, 10)
-    # init_new = init.copy()
-    # total_params = 0
+    prior_dist = dist.Normal(0, 10)
+    init_new = init.copy()
+    total_params = 0
 
-    # for i, high in enumerate(init_new.keys()):
-    #     for low in init_new[high].keys():
-    #         print(init_new[high][low].shape)
-    #         init_new[high][low] = prior_dist.sample(jax.random.PRNGKey(i), init_new[high][low].shape)
+    for i, high in enumerate(init_new.keys()):
+        for low in init_new[high].keys():
+            print(init_new[high][low].shape)
+            init_new[high][low] = prior_dist.sample(jax.random.PRNGKey(i), init_new[high][low].shape)
             
-    #         # increment count of total_params
-    #         layer_params = np.prod(np.array([j for j in init_new[high][low].shape]))
-    #         total_params += layer_params
+            # increment count of total_params
+            layer_params = np.prod(np.array([j for j in init_new[high][low].shape]))
+            total_params += layer_params
 
-    # print("Total parameters: ", total_params)
+    print("Total parameters: ", total_params)
 
     # Initialize MCMC
 
@@ -200,7 +199,7 @@ if __name__ == "__main__":
     parser.add_argument("--train_index", type=int, default=50000)
     parser.add_argument("--num_warmup", type=int, default=100)
     parser.add_argument("--num_samples", type=int, default=100)
-    parser.add_argument("--gpu", type=bool, default=False)
+    parser.add_argument("--gpu", type=bool, default=True)
     args = parser.parse_args()
 
     # Run main function
