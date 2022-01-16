@@ -18,7 +18,7 @@ from utils.load_data import load_cifar10_dataset
 
 # jax.tools.colab_tpu.setup_tpu()
 
-def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
+def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     # Administrative stuff
 
@@ -114,30 +114,30 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
 
     # Initialize parameters 
 
-    model2 = CNN()
-    batch = train_x[0:1, ]  # (N, H, W, C) format
-    print("Batch shape: ", batch.shape)
-    variables = model2.init(jax.random.PRNGKey(42), batch)
-    output = model2.apply(variables, batch)      
-    print("Output shape: ", output.shape)
-    init = flax.core.unfreeze(variables)["params"]
+    # model2 = CNN()
+    # batch = train_x[0:1, ]  # (N, H, W, C) format
+    # print("Batch shape: ", batch.shape)
+    # variables = model2.init(jax.random.PRNGKey(42), batch)
+    # output = model2.apply(variables, batch)      
+    # print("Output shape: ", output.shape)
+    # init = flax.core.unfreeze(variables)["params"]
 
     # Create more reasonable initial values by sampling from the prior
 
-    prior_dist = dist.Normal(0, 10)
-    init_new = init.copy()
-    total_params = 0
+    # prior_dist = dist.Normal(0, 10)
+    # init_new = init.copy()
+    # total_params = 0
 
-    for i, high in enumerate(init_new.keys()):
-        for low in init_new[high].keys():
-            print(init_new[high][low].shape)
-            init_new[high][low] = prior_dist.sample(jax.random.PRNGKey(i), init_new[high][low].shape)
+    # for i, high in enumerate(init_new.keys()):
+    #     for low in init_new[high].keys():
+    #         print(init_new[high][low].shape)
+    #         init_new[high][low] = prior_dist.sample(jax.random.PRNGKey(i), init_new[high][low].shape)
             
-            # increment count of total_params
-            layer_params = np.prod(np.array([j for j in init_new[high][low].shape]))
-            total_params += layer_params
+    #         # increment count of total_params
+    #         layer_params = np.prod(np.array([j for j in init_new[high][low].shape]))
+    #         total_params += layer_params
 
-    print("Total parameters: ", total_params)
+    # print("Total parameters: ", total_params)
 
     # Initialize MCMC
 
