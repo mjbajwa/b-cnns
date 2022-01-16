@@ -29,25 +29,25 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     tf.enable_v2_behavior()
     
-    if gpu:
+    # if gpu:
 
-        physical_devices = tf.config.list_physical_devices('GPU')
+    #    physical_devices = tf.config.list_physical_devices('GPU')
     
-        try:
-            # Disable first GPU
-            tf.config.set_visible_devices(physical_devices[1:], 'GPU')
-            logical_devices = tf.config.list_logical_devices('GPU')
-            # Logical device was not created for first GPU
-            assert len(logical_devices) == len(physical_devices) - 1
-        except:
-            pass
+    try:
+        # Disable first GPU
+        tf.config.set_visible_devices(physical_devices[1:], 'TPU')
+        logical_devices = tf.config.list_logical_devices('TPU')
+        # Logical device was not created for first GPU
+        assert len(logical_devices) == len(physical_devices) - 1
+    except:
+        pass
 
-        # Enable JAX/NumPyro to use GPU
+    # Enable JAX/NumPyro to use GPU
 
-        os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform" 
-        os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".8"
-        numpyro.set_platform("gpu")
-        numpyro.set_host_device_count(11)
+    os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform" 
+    os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".8"
+    numpyro.set_platform("tpu")
+    # numpyro.set_host_device_count(11)
     
     np.random.seed(0)
 
