@@ -26,6 +26,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
     # Administrative stuff
 
     print(jax.default_backend())
+    print(jax.device_count())
     # Disable tensorflow from using GPU
 
     tf.enable_v2_behavior()
