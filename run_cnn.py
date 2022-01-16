@@ -46,14 +46,14 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform" 
     os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".8"
-    numpyro.set_platform("tpu")
-    # numpyro.set_host_device_count(11)
+    numpyro.set_platform("cpu")
+    numpyro.set_host_device_count(50)
     
     np.random.seed(0)
 
-    physical_devices = tf.config.list_physical_devices('TPU')
-    os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform" 
-    os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".8"
+    # physical_devices = tf.config.list_physical_devices('TPU')
+    # os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform" 
+    # os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".8"
 
     # Declare constants for easy checks
 
