@@ -12,7 +12,7 @@ import numpyro
 import numpyro.distributions as dist
 import tensorflow.compat.v2 as tf
 from numpyro.contrib.module import random_flax_module
-from numpyro.infer import MCMC, NUTS, Predictive, init_to_feasible
+from numpyro.infer import MCMC, NUTS, Predictive, init_to_feasible, init_to_value
 
 from utils.load_data import load_cifar10_dataset
 
