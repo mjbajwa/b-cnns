@@ -23,11 +23,13 @@ from utils.load_data import load_cifar10_dataset
 
 # jax.tools.colab_tpu.setup_tpu()
 
-def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
+def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     # Administrative stuff
 
     print(jax.default_backend())
+    print(jax.device_count())
+    print(jax.lib.xla_bridge.get_backend().platform)
     
     # Disable tensorflow from using GPU
 
