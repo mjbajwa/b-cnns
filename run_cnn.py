@@ -195,11 +195,11 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     # Test accuracy calculation
 
-    test_preds = Predictive(model, mcmc.get_samples())(jax.random.PRNGKey(2), test_x, y=None)["y_pred"]
-    test_preds_ave = jnp.mean(test_preds, axis=0)
-    test_preds_index = jnp.argmax(test_preds_ave, axis=1)
-    accuracy = (test_ds["label"] == test_preds_index).mean()*100
-    print("Test accuracy: ", accuracy)
+    # test_preds = Predictive(model, mcmc.get_samples())(jax.random.PRNGKey(2), test_x, y=None)["y_pred"]
+    # test_preds_ave = jnp.mean(test_preds, axis=0)
+    # test_preds_index = jnp.argmax(test_preds_ave, axis=1)
+    # accuracy = (test_ds["label"] == test_preds_index).mean()*100
+    # print("Test accuracy: ", accuracy)
 
     # all_samples = mcmc.get_samples()
     # plt.plot(all_samples["CNN/Conv_0.kernel"][:, 3,3,3,16], "o")
