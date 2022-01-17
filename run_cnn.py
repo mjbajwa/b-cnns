@@ -72,7 +72,9 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
     # Load CIFAR-10 datasets
 
     train_x, test_x, y_train, y_test, temp_ds, test_ds = load_cifar10_dataset(train_index=TRAIN_IDX, flatten=False)
-    
+    # print(y_train)
+    y_train = jnp.argmax(y_train, axis=1)
+
     # Define model
 
     class CNN(nn.Module):
@@ -118,7 +120,7 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
         
         # numpyro.sample("y_pred", dist.Multinomial(total_count=1, probs=net(x)), obs=y)
         # y1 = jnp.argmax(y, axis=0)
-        numpyro.sample("y_pred", dist.Categorical(logits=net(x)), obs=y)
+        numpyro.sample("y_pred", dist.Categorical(logits=net(x)), obs=y_train)
 
 
     # Initialize parameters 
