@@ -124,7 +124,7 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
         # numpyro.sample("y_pred", dist.Multinomial(total_count=1, probs=net(x)), obs=y)
         # y1 = jnp.argmax(y, axis=0)
-        numpyro.sample("y_pred", dist.Categorical(logits=net(x)), obs=y_train)
+        numpyro.sample("y_pred", dist.Categorical(logits=net(x)), obs=y)
 
     # Initialize parameters
 
