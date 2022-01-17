@@ -74,6 +74,7 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
     train_x, test_x, y_train, y_test, temp_ds, test_ds = load_cifar10_dataset(train_index=TRAIN_IDX, flatten=False)
     # print(y_train)
     y_train = jnp.argmax(y_train, axis=1)
+    y_test = jnp.argmax(y_test, axis=1)
 
     # Define model
 
@@ -154,7 +155,7 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     # kernel = NUTS(model, init_strategy=init_to_value(values=init_new), target_accept_prob=0.70)
     kernel = NUTS(model, init_strategy=init_to_feasible(), target_accept_prob=0.70, 
-                 max_tree_depth=1)
+                 max_tree_depth=10)
     mcmc = MCMC(  
         kernel,
         num_warmup=NUM_WARMUP,
@@ -188,19 +189,21 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     train_preds = Predictive(model, mcmc.get_samples())(jax.random.PRNGKey(2), train_x, y=None)["y_pred"]
     train_preds_ave = jnp.mean(train_preds, axis=0)
-    print(train_preds_ave)
-    print(y_train)
+    # print(train_preds_ave)
+    # print(y_train)
     # train_preds_index = jnp.argmax(train_preds_ave, axis=1)
     # accuracy = (temp_ds["label"] == train_preds_index).mean()*100
-    # print("Train accuracy: ", accuracy)
+    accuracy = (y_train == train_preds_ave).mean()*100
+    print("Train accuracy: ", accuracy)
 
     # Test accuracy calculation
 
-    # test_preds = Predictive(model, mcmc.get_samples())(jax.random.PRNGKey(2), test_x, y=None)["y_pred"]
-    # test_preds_ave = jnp.mean(test_preds, axis=0)
+    test_preds = Predictive(model, mcmc.get_samples())(jax.random.PRNGKey(2), test_x, y=None)["y_pred"]
+    test_preds_ave = jnp.mean(test_preds, axis=0)
     # test_preds_index = jnp.argmax(test_preds_ave, axis=1)
     # accuracy = (test_ds["label"] == test_preds_index).mean()*100
-    # print("Test accuracy: ", accuracy)
+    accuracy = (y_test == test_preds_ave).mean()*100
+    print("Test accuracy: ", accuracy)
 
     # all_samples = mcmc.get_samples()
     # plt.plot(all_samples["CNN/Conv_0.kernel"][:, 3,3,3,16], "o")
