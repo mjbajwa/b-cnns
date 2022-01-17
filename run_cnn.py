@@ -61,6 +61,10 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
     NUM_WARMUP = num_warmup
     NUM_SAMPLES = num_samples
 
+    print("Training samples: ", train_index)
+    print("Warmup samples: ", num_warmup)
+    print("Number of samples: ", num_warmup)
+
     # Create keys for numpyro
 
     rng_key, rng_key_predict = random.split(random.PRNGKey(0))
@@ -147,7 +151,8 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
     # Initialize MCMC
 
     # kernel = NUTS(model, init_strategy=init_to_value(values=init_new), target_accept_prob=0.70)
-    kernel = NUTS(model, init_strategy=init_to_feasible(), target_accept_prob=0.70)
+    kernel = NUTS(model, init_strategy=init_to_feasible(), target_accept_prob=0.70, 
+                  max_tree_depth=1)
     mcmc = MCMC(  
         kernel,
         num_warmup=NUM_WARMUP,
@@ -202,7 +207,7 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Convolutional Bayesian Neural Networks for CIFAR-10")
-    parser.add_argument("--train_index", type=int, default=50000)
+    parser.add_argument("--train_index", type=int, default=30000)
     parser.add_argument("--num_warmup", type=int, default=100)
     parser.add_argument("--num_samples", type=int, default=100)
     parser.add_argument("--gpu", type=bool, default=False)
