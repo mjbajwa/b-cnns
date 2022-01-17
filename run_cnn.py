@@ -18,21 +18,22 @@ from utils.load_data import load_cifar10_dataset
 
 # jax.tools.colab_tpu.setup_tpu()
 
+
 def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     # Administrative stuff
 
     print(jax.default_backend())
     print(jax.device_count())
-    
+
     # Disable tensorflow from using GPU
 
     tf.enable_v2_behavior()
-    
+
     # if gpu:
 
     #    physical_devices = tf.config.list_physical_devices('GPU')
-    
+
     try:
         # Disable first GPU
         tf.config.set_visible_devices(physical_devices[1:], 'TPU')
@@ -44,15 +45,15 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     # Enable JAX/NumPyro to use GPU
 
-    os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform" 
-    os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".8"
+    os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform"
+    os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = ".8"
     numpyro.set_platform("cpu")
     numpyro.set_host_device_count(95)
-    
+
     np.random.seed(0)
 
     # physical_devices = tf.config.list_physical_devices('TPU')
-    # os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform" 
+    # os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform"
     # os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".8"
 
     # Declare constants for easy checks
@@ -71,18 +72,21 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     # Load CIFAR-10 datasets
 
-    train_x, test_x, y_train, y_test, temp_ds, test_ds = load_cifar10_dataset(train_index=TRAIN_IDX, flatten=False)
+    train_x, test_x, y_train, y_test, temp_ds, test_ds = load_cifar10_dataset(
+        train_index=TRAIN_IDX, flatten=False)
     # print(y_train)
     y_train = jnp.argmax(y_train, axis=1)
     y_test = jnp.argmax(y_test, axis=1)
+    print(x_test.shape)
+    print(y_test.shape)
 
     # Define model
 
     class CNN(nn.Module):
-            
+
         @nn.compact
         def __call__(self, x):
-            
+
             x = nn.Conv(features=8, kernel_size=(3, 3))(x)
             x = nn.swish(x)
             x = nn.avg_pool(x, window_shape=(2, 2), strides=(2, 2))
@@ -94,43 +98,41 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
             x = nn.swish(x)
             x = nn.Dense(features=10)(x)
             # x = nn.softmax(x)
-                
+
             return x
-        
 
     def model(x, y):
-        
+
         module = CNN()
-        
+
         net = random_flax_module(
-            "CNN", 
-            module, 
+            "CNN",
+            module,
             # prior = dist.Normal(0, 100),
-            prior = {
-            "Conv_0.bias": dist.Normal(0, 100), 
-            "Conv_0.kernel": dist.Normal(0, 100), 
-            "Conv_1.bias": dist.Normal(0, 100), 
-            "Conv_1.kernel": dist.Normal(0, 100), 
-            "Dense_0.bias": dist.Normal(0, 100), 
-            "Dense_0.kernel": dist.Normal(0, 100), 
-            "Dense_1.bias": dist.Normal(0, 100), 
-            "Dense_1.kernel": dist.Normal(0, 100),
+            prior={
+                "Conv_0.bias": dist.Normal(0, 100),
+                "Conv_0.kernel": dist.Normal(0, 100),
+                "Conv_1.bias": dist.Normal(0, 100),
+                "Conv_1.kernel": dist.Normal(0, 100),
+                "Dense_0.bias": dist.Normal(0, 100),
+                "Dense_0.kernel": dist.Normal(0, 100),
+                "Dense_1.bias": dist.Normal(0, 100),
+                "Dense_1.kernel": dist.Normal(0, 100),
             },
             input_shape=(1, 32, 32, 3)
         )
-        
+
         # numpyro.sample("y_pred", dist.Multinomial(total_count=1, probs=net(x)), obs=y)
         # y1 = jnp.argmax(y, axis=0)
         numpyro.sample("y_pred", dist.Categorical(logits=net(x)), obs=y_train)
 
-
-    # Initialize parameters 
+    # Initialize parameters
 
     model2 = CNN()
     batch = train_x[0:1, ]  # (N, H, W, C) format
     print("Batch shape: ", batch.shape)
     variables = model2.init(jax.random.PRNGKey(42), batch)
-    output = model2.apply(variables, batch)      
+    output = model2.apply(variables, batch)
     print("Output shape: ", output.shape)
     init = flax.core.unfreeze(variables)["params"]
 
@@ -143,10 +145,12 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
     for i, high in enumerate(init_new.keys()):
         for low in init_new[high].keys():
             print(init_new[high][low].shape)
-            init_new[high][low] = prior_dist.sample(jax.random.PRNGKey(i), init_new[high][low].shape)
-            
+            init_new[high][low] = prior_dist.sample(
+                jax.random.PRNGKey(i), init_new[high][low].shape)
+
             # increment count of total_params
-            layer_params = np.prod(np.array([j for j in init_new[high][low].shape]))
+            layer_params = np.prod(
+                np.array([j for j in init_new[high][low].shape]))
             total_params += layer_params
 
     print("Total parameters: ", total_params)
@@ -154,9 +158,9 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
     # Initialize MCMC
 
     # kernel = NUTS(model, init_strategy=init_to_value(values=init_new), target_accept_prob=0.70)
-    kernel = NUTS(model, init_strategy=init_to_feasible(), target_accept_prob=0.70, 
-                 max_tree_depth=2)
-    mcmc = MCMC(  
+    kernel = NUTS(model, init_strategy=init_to_feasible(), target_accept_prob=0.70,
+                  max_tree_depth=2)
+    mcmc = MCMC(
         kernel,
         num_warmup=NUM_WARMUP,
         num_samples=NUM_SAMPLES,
@@ -175,7 +179,7 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     # mcmc.print_summary()
 
-    ### Prediction Utilities
+    # Prediction Utilities
 
     # TODO:
 
@@ -187,7 +191,8 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     # Train accuracy calculation
 
-    train_preds = Predictive(model, mcmc.get_samples())(jax.random.PRNGKey(2), train_x, y=None)["y_pred"]
+    train_preds = Predictive(model, mcmc.get_samples())(
+        jax.random.PRNGKey(2), train_x, y=None)["y_pred"]
     train_preds_ave = jnp.mean(train_preds, axis=0)
     # print(train_preds_ave)
     # print(y_train)
@@ -198,7 +203,9 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     # Test accuracy calculation
 
-    test_preds = Predictive(model, mcmc.get_samples())(jax.random.PRNGKey(2), test_x, y=None)["y_pred"]
+    test_preds = Predictive(model, mcmc.get_samples())(
+        jax.random.PRNGKey(2), test_x, y=None)["y_pred"]
+    print(test_preds.shape)
     test_preds_ave = jnp.mean(test_preds, axis=0)
     # test_preds_index = jnp.argmax(test_preds_ave, axis=1)
     # accuracy = (test_ds["label"] == test_preds_index).mean()*100
@@ -215,9 +222,11 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     # mcmc.print_summary()
 
+
 if __name__ == "__main__":
-    
-    parser = argparse.ArgumentParser(description="Convolutional Bayesian Neural Networks for CIFAR-10")
+
+    parser = argparse.ArgumentParser(
+        description="Convolutional Bayesian Neural Networks for CIFAR-10")
     parser.add_argument("--train_index", type=int, default=10000)
     parser.add_argument("--num_warmup", type=int, default=100)
     parser.add_argument("--num_samples", type=int, default=100)
@@ -225,5 +234,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Run main function
-    
+
     run_conv_bnn(args.train_index, args.num_warmup, args.num_samples, args.gpu)
