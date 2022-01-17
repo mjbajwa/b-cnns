@@ -77,7 +77,7 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
     # print(y_train)
     y_train = jnp.argmax(y_train, axis=1)
     y_test = jnp.argmax(y_test, axis=1)
-    print(x_test.shape)
+    print(test_x.shape)
     print(y_test.shape)
 
     # Define model
