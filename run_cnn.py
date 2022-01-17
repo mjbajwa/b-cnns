@@ -76,10 +76,10 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
         @nn.compact
         def __call__(self, x):
             
-            x = nn.Conv(features=16, kernel_size=(3, 3))(x)
+            x = nn.Conv(features=4, kernel_size=(3, 3))(x)
             x = nn.swish(x)
             x = nn.avg_pool(x, window_shape=(2, 2), strides=(2, 2))
-            x = nn.Conv(features=32, kernel_size=(3, 3))(x)
+            x = nn.Conv(features=8, kernel_size=(3, 3))(x)
             x = nn.swish(x)
             x = nn.avg_pool(x, window_shape=(2, 2), strides=(2, 2))
             x = x.reshape((x.shape[0], -1))  # flatten
@@ -201,8 +201,8 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Convolutional Bayesian Neural Networks for CIFAR-10")
     parser.add_argument("--train_index", type=int, default=50000)
-    parser.add_argument("--num_warmup", type=int, default=100)
-    parser.add_argument("--num_samples", type=int, default=100)
+    parser.add_argument("--num_warmup", type=int, default=10)
+    parser.add_argument("--num_samples", type=int, default=10)
     parser.add_argument("--gpu", type=bool, default=False)
     args = parser.parse_args()
 
