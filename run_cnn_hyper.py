@@ -23,7 +23,7 @@ from utils.load_data import load_cifar10_dataset
 
 # jax.tools.colab_tpu.setup_tpu()
 
-def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
+def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     # Administrative stuff
 
