@@ -155,7 +155,7 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     # kernel = NUTS(model, init_strategy=init_to_value(values=init_new), target_accept_prob=0.70)
     kernel = NUTS(model, init_strategy=init_to_feasible(), target_accept_prob=0.70, 
-                 max_tree_depth=10)
+                 max_tree_depth=2)
     mcmc = MCMC(  
         kernel,
         num_warmup=NUM_WARMUP,
@@ -202,6 +202,10 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
     test_preds_ave = jnp.mean(test_preds, axis=0)
     # test_preds_index = jnp.argmax(test_preds_ave, axis=1)
     # accuracy = (test_ds["label"] == test_preds_index).mean()*100
+    print(y_test.shape)
+    print(y_test)
+    print(test_preds_ave.shape)
+    print(test_preds_ave)
     accuracy = (y_test == test_preds_ave).mean()*100
     print("Test accuracy: ", accuracy)
 
@@ -214,7 +218,7 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Convolutional Bayesian Neural Networks for CIFAR-10")
-    parser.add_argument("--train_index", type=int, default=30000)
+    parser.add_argument("--train_index", type=int, default=10000)
     parser.add_argument("--num_warmup", type=int, default=100)
     parser.add_argument("--num_samples", type=int, default=100)
     parser.add_argument("--gpu", type=bool, default=False)
