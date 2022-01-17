@@ -153,8 +153,7 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
     # Initialize MCMC
 
     # kernel = NUTS(model, init_strategy=init_to_value(values=init_new), target_accept_prob=0.70)
-    kernel = NUTS(model, init_strategy=init_to_feasible(), target_accept_prob=0.70, 
-                  max_tree_depth=1)
+    kernel = NUTS(model, init_strategy=init_to_feasible(), target_accept_prob=0.70)
     mcmc = MCMC(  
         kernel,
         num_warmup=NUM_WARMUP,
@@ -188,9 +187,11 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     train_preds = Predictive(model, mcmc.get_samples())(jax.random.PRNGKey(2), train_x, y=None)["y_pred"]
     train_preds_ave = jnp.mean(train_preds, axis=0)
-    train_preds_index = jnp.argmax(train_preds_ave, axis=1)
-    accuracy = (temp_ds["label"] == train_preds_index).mean()*100
-    print("Train accuracy: ", accuracy)
+    print(train_preds_ave)
+    print(y_train)
+    # train_preds_index = jnp.argmax(train_preds_ave, axis=1)
+    # accuracy = (temp_ds["label"] == train_preds_index).mean()*100
+    # print("Train accuracy: ", accuracy)
 
     # Test accuracy calculation
 
