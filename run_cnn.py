@@ -82,18 +82,18 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
         def __call__(self, x):
 
             x = nn.Conv(features=16, kernel_size=(3, 3))(x)
-            x = nn.swish(x)
-            x = nn.Conv(features=16, kernel_size=(3, 3))(x)
-            x = nn.swish(x)
+            x = nn.softplus(x)
+            # x = nn.Conv(features=16, kernel_size=(3, 3))(x)
+            # x = nn.softplus(x)
             x = nn.max_pool(x, window_shape=(3, 3))
-            x = nn.Conv(features=32, kernel_size=(3, 3))(x)
-            x = nn.swish(x)
-            x = nn.Conv(features=32, kernel_size=(3, 3))(x)
-            x = nn.swish(x)
+            x = nn.Conv(features=16, kernel_size=(3, 3))(x)
+            x = nn.softplus(x)
+            # x = nn.Conv(features=32, kernel_size=(3, 3))(x)
+            # x = nn.softplus(x)
             x = nn.max_pool(x, window_shape=(3, 3))
             x = x.reshape((x.shape[0], -1))  # flatten
-            x = nn.Dense(features=32)(x)
-            x = nn.swish(x)
+            x = nn.Dense(features=128)(x)
+            x = nn.softplus(x)
             x = nn.Dense(features=10)(x)
             # x = nn.softmax(x)
 
@@ -156,7 +156,9 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
     # Initialize MCMC
 
     # kernel = NUTS(model, init_strategy=init_to_value(values=init_new), target_accept_prob=0.70)
-    kernel = NUTS(model, init_strategy=init_to_feasible(), target_accept_prob=0.70,
+    kernel = NUTS(model, 
+                  init_strategy=init_to_feasible(), 
+                  target_accept_prob=0.70,
                   max_tree_depth=10)
     mcmc = MCMC(
         kernel,
