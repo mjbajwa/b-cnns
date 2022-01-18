@@ -81,14 +81,18 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
         @nn.compact
         def __call__(self, x):
 
+            x = nn.Conv(features=16, kernel_size=(3, 3))(x)
+            x = nn.swish(x)
+            x = nn.Conv(features=16, kernel_size=(3, 3))(x)
+            x = nn.swish(x)
+            x = nn.max_pool(x, window_shape=(3, 3))
             x = nn.Conv(features=32, kernel_size=(3, 3))(x)
             x = nn.swish(x)
-            x = nn.avg_pool(x, window_shape=(2, 2), strides=(2, 2))
             x = nn.Conv(features=32, kernel_size=(3, 3))(x)
             x = nn.swish(x)
-            x = nn.avg_pool(x, window_shape=(2, 2), strides=(2, 2))
+            x = nn.max_pool(x, window_shape=(3, 3))
             x = x.reshape((x.shape[0], -1))  # flatten
-            x = nn.Dense(features=64)(x)
+            x = nn.Dense(features=32)(x)
             x = nn.swish(x)
             x = nn.Dense(features=10)(x)
             # x = nn.softmax(x)
@@ -102,17 +106,17 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
         net = random_flax_module(
             "CNN",
             module,
-            # prior = dist.Normal(0, 100),
-            prior={
-                "Conv_0.bias": dist.Normal(0, 100),
-                "Conv_0.kernel": dist.Normal(0, 100),
-                "Conv_1.bias": dist.Normal(0, 100),
-                "Conv_1.kernel": dist.Normal(0, 100),
-                "Dense_0.bias": dist.Normal(0, 100),
-                "Dense_0.kernel": dist.Normal(0, 100),
-                "Dense_1.bias": dist.Normal(0, 100),
-                "Dense_1.kernel": dist.Normal(0, 100),
-            },
+            prior = dist.Normal(0, 100),
+            # prior={
+            #     "Conv_0.bias": dist.Normal(0, 100),
+            #     "Conv_0.kernel": dist.Normal(0, 100),
+            #     "Conv_1.bias": dist.Normal(0, 100),
+            #     "Conv_1.kernel": dist.Normal(0, 100),
+            #     "Dense_0.bias": dist.Normal(0, 100),
+            #     "Dense_0.kernel": dist.Normal(0, 100),
+            #     "Dense_1.bias": dist.Normal(0, 100),
+            #     "Dense_1.kernel": dist.Normal(0, 100),
+            # },
             input_shape=(1, 32, 32, 3)
         )
 
