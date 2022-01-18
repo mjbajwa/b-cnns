@@ -6,6 +6,7 @@ from sklearn.preprocessing import LabelBinarizer
 
 # Load CIFAR-10 datasets
 
+np.random.seed(42)
 
 def load_cifar10_dataset(train_index=50000, flatten=False):
 
@@ -25,12 +26,21 @@ def load_cifar10_dataset(train_index=50000, flatten=False):
                'label': test_ds['label'].astype(jnp.int32)}
     y_test = LabelBinarizer().fit_transform(test_ds['label'])
 
-    # Filter to the first 1000 images for configuration
+    # Randomly select train_index images if full batch not being used
 
     temp_ds = {}
-    temp_ds['image'] = train_ds['image'][0:train_index]
-    temp_ds['label'] = train_ds['label'][0:train_index]
-    y_train = y_train_all[0:train_index]
+
+    if train_index != 50000:
+        
+        ind = np.random.randint(0, 50000, train_index)
+        temp_ds['image'] = train_ds['image'][ind]
+        temp_ds['label'] = train_ds['label'][ind]
+        y_train = y_train_all[ind]
+
+    else:
+        temp_ds['image'] = train_ds['image'][0:train_index]
+        temp_ds['label'] = train_ds['label'][0:train_index]
+        y_train = y_train_all[0:train_index]
 
     if flatten:
 
