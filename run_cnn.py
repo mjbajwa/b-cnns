@@ -18,7 +18,6 @@ from utils.load_data import load_cifar10_dataset
 
 # jax.tools.colab_tpu.setup_tpu()
 
-
 def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     # Administrative stuff
@@ -49,11 +48,9 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
         os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = ".8"
         numpyro.set_platform("gpu")
 
-    np.random.seed(0)
+    # Set numpy seeds
 
-    # physical_devices = tf.config.list_physical_devices('TPU')
-    # os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform"
-    # os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".8"
+    np.random.seed(42)
 
     # Declare constants for easy checks
 
@@ -76,8 +73,6 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
     # print(y_train)
     y_train = jnp.argmax(y_train, axis=1)
     y_test = jnp.argmax(y_test, axis=1)
-    print(test_x.shape)
-    print(y_test.shape)
 
     # Define model
 
