@@ -92,7 +92,7 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
             # x = nn.softplus(x)
             x = nn.max_pool(x, window_shape=(3, 3))
             x = x.reshape((x.shape[0], -1))  # flatten
-            x = nn.Dense(features=128)(x)
+            x = nn.Dense(features=64)(x)
             x = nn.softplus(x)
             x = nn.Dense(features=10)(x)
             # x = nn.softmax(x)
