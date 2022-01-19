@@ -78,9 +78,9 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
         @nn.compact
         def __call__(self, x):
             
-            x = nn.Dense(features=128)(x)
-            x = nn.swish(x) # TODO: check tanh vs softplus
             x = nn.Dense(features=256)(x)
+            x = nn.swish(x) # TODO: check tanh vs softplus
+            x = nn.Dense(features=512)(x)
             x = nn.swish(x) # TODO: check tanh vs softplus
             x = nn.Dense(features=10)(x)
             x = nn.softmax(x)
