@@ -71,8 +71,8 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
     train_x, test_x, y_train, y_test, temp_ds, test_ds = load_cifar10_dataset(
         train_index=TRAIN_IDX, flatten=False)
     # print(y_train)
-    y_train = jnp.argmax(y_train, axis=1)
-    y_test = jnp.argmax(y_test, axis=1)
+    # y_train = jnp.argmax(y_train, axis=1)
+    # y_test = jnp.argmax(y_test, axis=1)
 
     # Define model
 
@@ -81,15 +81,16 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
         @nn.compact
         def __call__(self, x):
             x = nn.Conv(features=8, kernel_size=(3, 3))(x)
-            x = nn.relu(x)
+            x = nn.swish(x)
             x = nn.avg_pool(x, window_shape=(2, 2), strides=(2, 2))
             x = nn.Conv(features=16, kernel_size=(3, 3))(x)
-            x = nn.relu(x)
+            x = nn.swish(x)
             x = nn.avg_pool(x, window_shape=(2, 2), strides=(2, 2))
             x = x.reshape((x.shape[0], -1))  # flatten
             x = nn.Dense(features=64)(x)
-            x = nn.relu(x)
+            x = nn.swish(x)
             x = nn.Dense(features=10)(x)
+            x = nn.softmax(x)
             return x
 
     def model(x, y):
@@ -99,23 +100,23 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
         net = random_flax_module(
             "CNN",
             module,
-            prior = dist.Normal(0, 100),
-            # prior={
-            #     "Conv_0.bias": dist.Normal(0, 100),
-            #     "Conv_0.kernel": dist.Normal(0, 100),
-            #     "Conv_1.bias": dist.Normal(0, 100),
-            #     "Conv_1.kernel": dist.Normal(0, 100),
-            #     "Dense_0.bias": dist.Normal(0, 100),
-            #     "Dense_0.kernel": dist.Normal(0, 100),
-            #     "Dense_1.bias": dist.Normal(0, 100),
-            #     "Dense_1.kernel": dist.Normal(0, 100),
-            # },
+            # prior = dist.Normal(0, 100),
+            prior={
+                "Conv_0.bias": dist.Normal(0, 100),
+                "Conv_0.kernel": dist.Normal(0, 50),
+                "Conv_1.bias": dist.Normal(0, 100),
+                "Conv_1.kernel": dist.Normal(0, 25),
+                "Dense_0.bias": dist.Normal(0, 100),
+                "Dense_0.kernel": dist.Normal(0, 25),
+                "Dense_1.bias": dist.Normal(0, 100),
+                "Dense_1.kernel": dist.Normal(0, 10),
+            },
             input_shape=(1, 32, 32, 3)
         )
 
-        # numpyro.sample("y_pred", dist.Multinomial(total_count=1, probs=net(x)), obs=y)
+        numpyro.sample("y_pred", dist.Multinomial(total_count=1, probs=net(x)), obs=y)
         # y1 = jnp.argmax(y, axis=0)
-        numpyro.sample("y_pred", dist.Categorical(logits=net(x)), obs=y)
+        # numpyro.sample("y_pred", dist.Categorical(logits=net(x)), obs=y)
 
     # Initialize parameters
 
@@ -186,18 +187,21 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     train_preds = Predictive(model, mcmc.get_samples())(
         jax.random.PRNGKey(2), train_x, y=None)["y_pred"]
-    train_preds_ave = jnp.mean(train_preds, axis=0)
-    # train_preds_index = jnp.argmax(train_preds_ave, axis=1)
-    # accuracy = (temp_ds["label"] == train_preds_index).mean()*100
-    accuracy = (y_train == train_preds_ave).mean()*100
+    # train_preds_ave = jnp.mean(train_preds, axis=0)
+    train_preds_index = jnp.argmax(train_preds_ave, axis=1)
+    accuracy = (temp_ds["label"] == train_preds_index).mean()*100
+    # accuracy = (y_train == train_preds_ave).mean()*100
     print("Train accuracy: ", accuracy)
 
     # Test accuracy calculation
 
     test_preds = Predictive(model, mcmc.get_samples())(
         jax.random.PRNGKey(2), test_x, y=None)["y_pred"]
+    # test_preds_ave = jnp.mean(test_preds, axis=0)
+    # accuracy = (y_test == test_preds_ave).mean()*100
     test_preds_ave = jnp.mean(test_preds, axis=0)
-    accuracy = (y_test == test_preds_ave).mean()*100
+    test_preds_index = jnp.argmax(test_preds_ave, axis=1)
+    accuracy = (test_ds["label"] == test_preds_index).mean()*100
     print("Test accuracy: ", accuracy)
 
     # all_samples = mcmc.get_samples()
