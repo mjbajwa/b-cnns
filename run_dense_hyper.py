@@ -93,9 +93,9 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
         # Hyperparameters 
 
         dense_0_w_prec = numpyro.sample("dense_0_w_prec", dist.Gamma(0.25, 0.000625*512))
-        dense_0_b_prec = numpyro.sample("dense_0_b_prec", dist.Gamma(0.25, 0.000625*512))
+        dense_0_b_prec = numpyro.sample("dense_0_b_prec", dist.Gamma(0.25, 0.000625))
         dense_1_w_prec = numpyro.sample("dense_1_w_prec", dist.Gamma(0.25, 0.000625*1024))
-        dense_1_b_prec = numpyro.sample("dense_1_b_prec", dist.Gamma(0.25, 0.000625*1024))
+        dense_1_b_prec = numpyro.sample("dense_1_b_prec", dist.Gamma(0.25, 0.000625))
         dense_2_w_prec = numpyro.sample("dense_2_w_prec", dist.Gamma(0.25, 0.000625*10))
         # dense_2_b_prec = numpyro.sample("dense_2_b_prec", dist.Gamma(0.25, 0.000625))
         # dense_3_w_prec = numpyro.sample("dense_3_w_prec", dist.Gamma(0.25, 0.000625/jnp.sqrt(1024)))
