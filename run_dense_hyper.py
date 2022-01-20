@@ -93,9 +93,9 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
         # Hyperparameters 
 
         dense_0_w_prec = numpyro.sample("dense_0_w_prec", dist.Gamma(0.25, 0.000625*512))
-        dense_0_b_prec = numpyro.sample("dense_0_b_prec", dist.Gamma(0.25, 0.000625))
+        # dense_0_b_prec = numpyro.sample("dense_0_b_prec", dist.Gamma(0.25, 0.000625))
         dense_1_w_prec = numpyro.sample("dense_1_w_prec", dist.Gamma(0.25, 0.000625*1024))
-        dense_1_b_prec = numpyro.sample("dense_1_b_prec", dist.Gamma(0.25, 0.000625))
+        # dense_1_b_prec = numpyro.sample("dense_1_b_prec", dist.Gamma(0.25, 0.000625))
         dense_2_w_prec = numpyro.sample("dense_2_w_prec", dist.Gamma(0.25, 0.000625*10))
         # dense_2_b_prec = numpyro.sample("dense_2_b_prec", dist.Gamma(0.25, 0.000625))
         # dense_3_w_prec = numpyro.sample("dense_3_w_prec", dist.Gamma(0.25, 0.000625/jnp.sqrt(1024)))
@@ -112,9 +112,9 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
             "DNN", 
             module, 
             prior = {
-            "Dense_0.bias": dist.Normal(0, 1/jnp.sqrt(dense_0_b_prec)), 
+            "Dense_0.bias": dist.Normal(0, 100), 
             "Dense_0.kernel": dist.Normal(0, 1/jnp.sqrt(dense_0_w_prec)), 
-            "Dense_1.bias": dist.Normal(0, 1/jnp.sqrt(dense_1_b_prec)), 
+            "Dense_1.bias": dist.Normal(0, 100), 
             "Dense_1.kernel": dist.Normal(0, 1/jnp.sqrt(dense_1_w_prec)),
             "Dense_2.bias": dist.Normal(0, 100), 
             "Dense_2.kernel": dist.Normal(0, 1/jnp.sqrt(dense_2_w_prec)),
