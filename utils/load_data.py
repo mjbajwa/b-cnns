@@ -32,7 +32,7 @@ def load_cifar10_dataset(train_index=50000, flatten=False):
 
     if train_index != 50000:
         
-        ind = np.random.choice(50000, train_index, replace=False)
+        ind = np.sort(np.random.choice(50000, train_index, replace=False))
         print("Training indices chosen: ", ind)
         temp_ds['image'] = train_ds['image'][ind]
         temp_ds['label'] = train_ds['label'][ind]
