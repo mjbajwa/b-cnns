@@ -74,7 +74,7 @@ def mcmc_summary_to_dataframe(mcmc):
     df["95.0%"] = p95
     df["n_eff"] = n_eff
     df["r_hat"] = r_hat
-    df.index = var_name
+    # df.index = var_name
     
     return df
 
