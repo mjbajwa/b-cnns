@@ -187,10 +187,10 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     train_preds = Predictive(model, mcmc.get_samples())(
         jax.random.PRNGKey(2), train_x, y=None)["y_pred"]
-    # train_preds_ave = jnp.mean(train_preds, axis=0)
-    train_preds_index = jnp.argmax(train_preds_ave, axis=1)
-    accuracy = (temp_ds["label"] == train_preds_index).mean()*100
-    # accuracy = (y_train == train_preds_ave).mean()*100
+    train_preds_ave = jnp.mean(train_preds, axis=0)
+    # train_preds_index = jnp.argmax(train_preds_ave, axis=1)
+    # accuracy = (temp_ds["label"] == train_preds_index).mean()*100
+    accuracy = (y_train == train_preds_ave).mean()*100
     print("Train accuracy: ", accuracy)
 
     # Test accuracy calculation
