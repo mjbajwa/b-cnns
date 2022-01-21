@@ -91,7 +91,7 @@ def plot_extra_fields(mcmc, output_path):
                 c=["red"], alpha=0.5, edgecolors="face", linewidths=2)
     plt.title("Acceptance Probability of Proposal")
     plt.grid()
-    plt.savefig(Path(output_path, 'accept_prob.jpeg'), transparent=False)
+    plt.savefig(Path(output_path, 'accept_prob.jpg'), transparent=False)
     plt.show()
     
     # Steps in HMC trajectory
@@ -102,7 +102,7 @@ def plot_extra_fields(mcmc, output_path):
                 c=["green"], alpha=0.5, edgecolors="face", linewidths=2)
     plt.title("Number of steps in HMC trajectory")
     plt.grid()
-    plt.savefig(Path(output_path, 'hmc_steps.jpeg'), transparent=False)
+    plt.savefig(Path(output_path, 'hmc_steps.jpg'), transparent=False)
     plt.show()
 
 
@@ -112,7 +112,7 @@ def plot_traces(var, output_path):
     arviz.plot_trace(mcmc_obj, var_names=var, filter_vars="like", 
                      kind="trace", compact=True, figsize=(20, 7));
     plt.grid()
-    plt.savefig(Path(output_path, '{}.jpeg'.format(var)), transparent=False)
+    plt.savefig(Path(output_path, '{}.jpg'.format(var)), transparent=False)
     plt.show()
 
 
@@ -121,5 +121,5 @@ def rhat_histogram(df, output_path):
     plt.figure(figsize=(10, 7))
     plt.grid()
     plt.hist(df["r_hat"], bins=50, color="red", density=True, stacked=True);
-    plt.savefig(Path(output_path, 'rhat_distribution.jpeg'), transparent=False)
+    plt.savefig(Path(output_path, 'rhat_distribution.jpg'), transparent=False)
     plt.show()
