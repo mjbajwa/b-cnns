@@ -5,6 +5,7 @@ from pathlib import Path
 import arviz
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from numpyro.diagnostics import summary
 
 
