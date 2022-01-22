@@ -85,7 +85,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
             x = nn.Dense(features=512)(x)
             x = nn.swish(x) # TODO: check tanh vs softplus
             x = nn.Dense(features=10)(x)
-            x = nn.softmax(x)
+            # x = nn.softmax(x)
             
             return x
         
@@ -115,7 +115,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
         )
                 
         # numpyro.sample("y_pred", dist.Multinomial(total_count=1, probs=net(x)), obs=y)
-        numpyro.sample("y_pred", dist.Categorical(probs=net(x)), obs=y)
+        numpyro.sample("y_pred", dist.Categorical(logits=net(x)), obs=y)
 
     # Initialize parameters 
 
@@ -240,6 +240,3 @@ if __name__ == "__main__":
         f.write('\n'.join(results))
 
     # TODO: write inputs into a file as well to track all experiments
-
-
-
