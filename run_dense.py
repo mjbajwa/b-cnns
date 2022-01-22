@@ -114,8 +114,8 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
         
         )
                 
-        # numpyro.sample("y_pred", dist.Multinomial(total_count=1, probs=net(x)), obs=y)
-        numpyro.sample("y_pred", dist.Categorical(logits=net(x)), obs=y)
+        numpyro.sample("y_pred", dist.MultinomialLogits(total_count=1, probs=net(x)), obs=y)
+        # numpyro.sample("y_pred", dist.MultinomialLogits(logits=net(x)), obs=y)
 
     # Initialize parameters 
 
@@ -158,7 +158,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
 
     # Run MCMC
 
-    mcmc.run(rng_key, train_x, temp_ds["label"], 
+    mcmc.run(rng_key, train_x, y_train, 
              extra_fields = ("z", "i", 
                              "num_steps", 
                              "accept_prob", 
