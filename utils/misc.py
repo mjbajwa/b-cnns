@@ -8,6 +8,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from numpyro.diagnostics import summary
 
+pd.set_option('display.width', 1000)
+pd.set_option('display.max_columns', 1000)
 
 def make_output_folder():
 
@@ -105,6 +107,13 @@ def plot_extra_fields(mcmc, output_path):
     plt.savefig(Path(output_path, 'hmc_steps.jpg'), transparent=False)
     plt.show()
 
+def print_extra_fields(mcmc):
+
+    extra_fields = mcmc.get_extra_fields(group_by_chain=False)
+    df = pd.DataFrame()
+    df["accept_prob"] = extra_fields['accept_prob']
+    df["num_steps"] = extra_fields['num_steps']
+    print(df)
 
 def plot_traces(var, output_path):
 
