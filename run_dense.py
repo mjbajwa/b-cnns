@@ -21,7 +21,7 @@ from numpyro.infer import MCMC, NUTS, Predictive, init_to_feasible
 from sklearn.preprocessing import LabelBinarizer
 
 from utils.load_data import load_cifar10_dataset
-from utils.misc import make_output_folder, mcmc_summary_to_dataframe, plot_extra_fields, plot_traces, rhat_histogram
+from utils.misc import make_output_folder, mcmc_summary_to_dataframe, plot_extra_fields, plot_traces, rhat_histogram, print_extra_fields
 
 def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
@@ -216,6 +216,7 @@ if __name__ == "__main__":
     # Save trace plots 
 
     plot_extra_fields(mcmc, output_path)
+    print_extra_fields(mcmc)
 
     # TODO: Trace plots
     
@@ -234,4 +235,6 @@ if __name__ == "__main__":
         f.write('\n'.join(results))
 
     # TODO: write inputs into a file as well to track all experiments
+
+
 
