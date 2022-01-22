@@ -175,13 +175,17 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
     # Train accuracy calculation
 
     train_preds = Predictive(model, mcmc.get_samples())(rng_key_predict, train_x, y=None)["y_pred"]
+    print("Train Preds: \n\n")
     print(train_preds)
     train_preds_ave = jnp.mean(train_preds, axis=0)
+    print("Train preds average: \n\n")
     print(train_preds_ave)
     train_preds_index = jnp.argmax(train_preds_ave, axis=1)
+    print("Train preds index: \n\n")
     print(train_preds_index)
-    train_accuracy = (temp_ds["label"] == train_preds_index).mean()*100
+    print("Actual: \n\n")
     print(temp_ds["label"])
+    train_accuracy = (temp_ds["label"] == train_preds_index).mean()*100
     print("Train accuracy: ", train_accuracy)
 
     # Test accuracy calculation
