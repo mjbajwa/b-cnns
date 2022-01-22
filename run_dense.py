@@ -114,7 +114,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
         
         )
                 
-        numpyro.sample("y_pred", dist.MultinomialLogits(total_count=1, probs=net(x)), obs=y)
+        numpyro.sample("y_pred", dist.MultinomialLogits(total_count=1, logits=net(x)), obs=y)
         # numpyro.sample("y_pred", dist.MultinomialLogits(logits=net(x)), obs=y)
 
     # Initialize parameters 
