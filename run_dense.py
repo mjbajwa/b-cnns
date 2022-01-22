@@ -220,6 +220,8 @@ if __name__ == "__main__":
 
     # Save trace plots 
 
+    print("=========================")
+    print("Plotting extra fields \n\n")
     plot_extra_fields(mcmc, output_path)
     print_extra_fields(mcmc)
 
@@ -227,11 +229,15 @@ if __name__ == "__main__":
     
     # R-hat plot
 
+    print("=========================")
+    print("Histogram of R_hat and n_eff \n\n")
     df = mcmc_summary_to_dataframe(mcmc)
     rhat_histogram(df, output_path)
 
     # Write train and test accuracy to file
 
+    print("=========================")
+    print("Writing results to file \n\n")
     results = ['Training Accuracy: {}'.format(train_acc), 
                'Test Accuracy: {}'.format(test_acc)]
     
