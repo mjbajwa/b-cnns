@@ -228,7 +228,7 @@ if __name__ == "__main__":
     logging.info("=========================")
     logging.info("Plotting extra fields \n\n")
     plot_extra_fields(mcmc, output_path)
-    print_extra_fields(mcmc)
+    print_extra_fields(mcmc, output_path)
 
     # TODO: Trace plots
     
