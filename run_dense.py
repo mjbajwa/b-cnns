@@ -236,7 +236,7 @@ if __name__ == "__main__":
 
     logging.info("=========================")
     logging.info("Histogram of R_hat and n_eff \n\n")
-    df = mcmc_summary_to_dataframe(mcmc, output_path)
+    df = mcmc_summary_to_dataframe(mcmc)
     rhat_histogram(df, output_path)
 
     # Write train and test accuracy to file
