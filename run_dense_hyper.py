@@ -20,6 +20,8 @@ from numpyro.infer import MCMC, NUTS, Predictive, init_to_feasible
 from sklearn.preprocessing import LabelBinarizer
 
 from utils.load_data import load_cifar10_dataset
+from utils.misc import make_output_folder, mcmc_summary_to_dataframe, plot_extra_fields, plot_traces, rhat_histogram, print_extra_fields
+
 
 # jax.tools.colab_tpu.setup_tpu()
 
@@ -159,7 +161,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
 
     # Initialize MCMC
 
-    kernel = NUTS(model, init_strategy=init_to_feasible(), target_accept_prob=0.90)
+    kernel = NUTS(model, init_strategy=init_to_feasible(), target_accept_prob=0.70)
     mcmc = MCMC(  
         kernel,
         num_warmup=NUM_WARMUP,
@@ -185,6 +187,12 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
 
     # Train accuracy calculation
 
+    # train_preds = Predictive(model, mcmc.get_samples())(jax.random.PRNGKey(2), train_x, y=None)["y_pred"]
+    # train_preds_ave = jnp.mean(train_preds, axis=0)
+    # train_preds_index = jnp.argmax(train_preds_ave, axis=1)
+    # accuracy = (temp_ds["label"] == train_preds_index).mean()*100
+    # print("Train accuracy: ", accuracy)
+
     train_preds = Predictive(model, mcmc.get_samples())(jax.random.PRNGKey(2), train_x, y=None)["y_pred"]
     train_preds_ave = jnp.mean(train_preds, axis=0)
     train_preds_index = jnp.argmax(train_preds_ave, axis=1)
@@ -199,11 +207,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
     accuracy = (test_ds["label"] == test_preds_index).mean()*100
     print("Test accuracy: ", accuracy)
 
-    # all_samples = mcmc.get_samples() 
-    # plt.plot(all_samples["CNN/Conv_0.kernel"][:, 3,3,3,16], "o")
-    # plt.plot(all_samples["CNN/Dense_0.kernel"][:, 10], "o")
-
-    # mcmc.print_summary()
+    return mcmc, train_accuracy, test_accuracy
 
 if __name__ == "__main__":
     
@@ -216,6 +220,39 @@ if __name__ == "__main__":
     parser.add_argument("--gpu", type=bool, default=False)
     args = parser.parse_args()
 
+    # Create folder to save results
+
+    output_path = make_output_folder()
+    
     # Run main function
     
-    run_dense_bnn(args.train_index, args.num_warmup, args.num_samples, args.gpu)
+    mcmc, train_acc, test_acc = run_dense_bnn(args.train_index, args.num_warmup, args.num_samples, args.gpu)
+
+    # Save trace plots 
+
+    print("=========================")
+    print("Plotting extra fields \n\n")
+    plot_extra_fields(mcmc, output_path)
+    print_extra_fields(mcmc)
+
+    # TODO: Trace plots
+    
+    # R-hat plot
+
+    print("=========================")
+    print("Histogram of R_hat and n_eff \n\n")
+    df = mcmc_summary_to_dataframe(mcmc)
+    rhat_histogram(df, output_path)
+
+    # Write train and test accuracy to file
+
+    print("=========================")
+    print("Writing results to file \n\n")
+    results = ['Training Accuracy: {}'.format(train_acc), 
+               'Test Accuracy: {}'.format(test_acc)]
+    
+    with open(Path(output_path, 'results.txt'), 'w') as f:
+        f.write('-------- Results ----------\n\n')
+        f.write('\n'.join(results))
+
+    # TODO: write inputs into a file as well to track all experiments
