@@ -108,13 +108,14 @@ def plot_extra_fields(mcmc, output_path):
     plt.savefig(Path(output_path, 'hmc_steps.jpg'), transparent=False)
     plt.show()
 
-def print_extra_fields(mcmc):
+def print_extra_fields(mcmc, output_path):
 
     extra_fields = mcmc.get_extra_fields(group_by_chain=False)
     df = pd.DataFrame()
     df["accept_prob"] = extra_fields['accept_prob']
     df["num_steps"] = extra_fields['num_steps']
     print(df)
+    df.to_csv(Path(output_path, "diagnostics.txt"), header=None, index=None, sep=' ', mode='a')
 
 def plot_traces(var, output_path):
 

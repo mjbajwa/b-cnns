@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import logging
 from pathlib import Path
 
 import flax
@@ -176,18 +177,18 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
     # Train accuracy calculation
 
     train_preds = Predictive(model, mcmc.get_samples())(rng_key_predict, train_x, y=None)["y_pred"]
-    print("Train Preds: \n\n")
-    print(train_preds)
+    # print("Train Preds: \n\n")
+    # print(train_preds)
     train_preds_ave = jnp.mean(train_preds, axis=0)
-    print("Train preds average: \n\n")
-    print(train_preds_ave)
+    # print("Train preds average: \n\n")
+    # print(train_preds_ave)
     train_preds_index = jnp.argmax(train_preds_ave, axis=1)
-    print("Train preds index: \n\n")
-    print(train_preds_index)
-    print("Actual: \n\n")
-    print(temp_ds["label"])
+    # print("Train preds index: \n\n")
+    # print(train_preds_index)
+    # print("Actual: \n\n")
+    # print(temp_ds["label"])
     train_accuracy = (temp_ds["label"] == train_preds_index).mean()*100
-    print("Train accuracy: ", train_accuracy)
+    # print("Train accuracy: ", train_accuracy)
 
     # Test accuracy calculation
 
@@ -195,7 +196,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
     test_preds_ave = jnp.mean(test_preds, axis=0)
     test_preds_index = jnp.argmax(test_preds_ave, axis=1)
     test_accuracy = (test_ds["label"] == test_preds_index).mean()*100
-    print("Test accuracy: ", test_accuracy)
+    # print("Test accuracy: ", test_accuracy)
 
     return mcmc, train_accuracy, test_accuracy
 
@@ -203,7 +204,7 @@ if __name__ == "__main__":
     
     # Parse arguments
 
-    parser = argparse.ArgumentParser(description="Convolutional Bayesian Neural Networks for CIFAR-10")
+    parser = argparse.ArgumentParser(description="Deep Bayesian Neural Networks for CIFAR-10")
     parser.add_argument("--train_index", type=int, default=50000)
     parser.add_argument("--num_warmup", type=int, default=100)
     parser.add_argument("--num_samples", type=int, default=100)
@@ -213,15 +214,19 @@ if __name__ == "__main__":
     # Create folder to save results
 
     output_path = make_output_folder()
+    logging.basicConfig(filename=Path(output_path, 'results.log'), level=logging.INFO)
+    logging.info('Deep Bayesian Net - Fully Connected')
     
     # Run main function
     
     mcmc, train_acc, test_acc = run_dense_bnn(args.train_index, args.num_warmup, args.num_samples, args.gpu)
+    logging.info("print("Train accuracy: {}".format(train_acc)"))
+    logging.info("print("Test accuracy: {}".format(test_acc)"))
 
     # Save trace plots 
 
-    print("=========================")
-    print("Plotting extra fields \n\n")
+    logging.info("=========================")
+    logging.info("Plotting extra fields \n\n")
     plot_extra_fields(mcmc, output_path)
     print_extra_fields(mcmc)
 
@@ -229,15 +234,15 @@ if __name__ == "__main__":
     
     # R-hat plot
 
-    print("=========================")
-    print("Histogram of R_hat and n_eff \n\n")
-    df = mcmc_summary_to_dataframe(mcmc)
+    logging.info("=========================")
+    logging.info("Histogram of R_hat and n_eff \n\n")
+    df = mcmc_summary_to_dataframe(mcmc, output_path)
     rhat_histogram(df, output_path)
 
     # Write train and test accuracy to file
 
-    print("=========================")
-    print("Writing results to file \n\n")
+    logging.info("=========================")
+    logging.info("Writing results to file \n\n")
     results = ['Training Accuracy: {}'.format(train_acc), 
                'Test Accuracy: {}'.format(test_acc)]
     
