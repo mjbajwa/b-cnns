@@ -220,8 +220,8 @@ if __name__ == "__main__":
     # Run main function
     
     mcmc, train_acc, test_acc = run_dense_bnn(args.train_index, args.num_warmup, args.num_samples, args.gpu)
-    logging.info("print("Train accuracy: {}".format(train_acc)"))
-    logging.info("print("Test accuracy: {}".format(test_acc)"))
+    logging.info("Train accuracy: {}".format(train_acc))
+    logging.info("Test accuracy: {}".format(test_acc))
 
     # Save trace plots 
 
