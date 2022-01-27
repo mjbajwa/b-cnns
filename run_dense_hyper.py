@@ -2,6 +2,8 @@
 
 import argparse
 import os
+import logging
+from pathlib import Path
 
 import flax
 import flax.linen as nn
@@ -114,9 +116,9 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
             "DNN", 
             module, 
             prior = {
-            "Dense_0.bias": dist.Normal(0, 50), 
+            "Dense_0.bias": dist.Normal(0, 100), 
             "Dense_0.kernel": dist.Normal(0, 1/jnp.sqrt(dense_0_w_prec)), 
-            "Dense_1.bias": dist.Normal(0, 10), 
+            "Dense_1.bias": dist.Normal(0, 100), 
             "Dense_1.kernel": dist.Normal(0, 1/jnp.sqrt(dense_1_w_prec)),
             "Dense_2.bias": dist.Normal(0, 100), 
             "Dense_2.kernel": dist.Normal(0, 1/jnp.sqrt(dense_2_w_prec)),
@@ -213,7 +215,7 @@ if __name__ == "__main__":
     
     # Parse arguments
 
-    parser = argparse.ArgumentParser(description="Convolutional Bayesian Neural Networks for CIFAR-10")
+    parser = argparse.ArgumentParser(description="(Hyperparameters) Deep Bayesian Neural Networks for CIFAR-10")
     parser.add_argument("--train_index", type=int, default=50000)
     parser.add_argument("--num_warmup", type=int, default=100)
     parser.add_argument("--num_samples", type=int, default=100)
@@ -223,31 +225,35 @@ if __name__ == "__main__":
     # Create folder to save results
 
     output_path = make_output_folder()
+    logging.basicConfig(filename=Path(output_path, 'results.log'), level=logging.INFO)
+    logging.info('Deep Bayesian Net - Fully Connected')
     
     # Run main function
     
     mcmc, train_acc, test_acc = run_dense_bnn(args.train_index, args.num_warmup, args.num_samples, args.gpu)
+    logging.info("Train accuracy: {}".format(train_acc))
+    logging.info("Test accuracy: {}".format(test_acc))
 
     # Save trace plots 
 
-    print("=========================")
-    print("Plotting extra fields \n\n")
+    logging.info("=========================")
+    logging.info("Plotting extra fields \n\n")
     plot_extra_fields(mcmc, output_path)
-    print_extra_fields(mcmc)
+    print_extra_fields(mcmc, output_path)
 
     # TODO: Trace plots
     
     # R-hat plot
 
-    print("=========================")
-    print("Histogram of R_hat and n_eff \n\n")
+    logging.info("=========================")
+    logging.info("Histogram of R_hat and n_eff \n\n")
     df = mcmc_summary_to_dataframe(mcmc)
-    rhat_histogram(df, output_path)
+    # rhat_histogram(df, output_path)
 
     # Write train and test accuracy to file
 
-    print("=========================")
-    print("Writing results to file \n\n")
+    logging.info("=========================")
+    logging.info("Writing results to file \n\n")
     results = ['Training Accuracy: {}'.format(train_acc), 
                'Test Accuracy: {}'.format(test_acc)]
     
