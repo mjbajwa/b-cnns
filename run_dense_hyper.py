@@ -199,7 +199,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
     train_preds_ave = jnp.mean(train_preds, axis=0)
     train_preds_index = jnp.argmax(train_preds_ave, axis=1)
     train_accuracy = (temp_ds["label"] == train_preds_index).mean()*100
-    print("Train accuracy: ", accuracy)
+    print("Train accuracy: ", train_accuracy)
 
     # Test accuracy calculation
 
@@ -207,7 +207,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
     test_preds_ave = jnp.mean(test_preds, axis=0)
     test_preds_index = jnp.argmax(test_preds_ave, axis=1)
     test_accuracy = (test_ds["label"] == test_preds_index).mean()*100
-    print("Test accuracy: ", accuracy)
+    print("Test accuracy: ", test_accuracy)
 
     return mcmc, train_accuracy, test_accuracy
 
