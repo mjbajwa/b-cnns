@@ -96,11 +96,11 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
 
         # Hyperparameters 
 
-        dense_0_w_prec = numpyro.sample("dense_0_w_prec", dist.Gamma(0.25, 0.000625*512))
+        dense_0_w_prec = numpyro.sample("dense_0_w_prec", dist.Gamma(0.25, 0.000625))
         # dense_0_b_prec = numpyro.sample("dense_0_b_prec", dist.Gamma(0.25, 0.000625))
-        dense_1_w_prec = numpyro.sample("dense_1_w_prec", dist.Gamma(0.25, 0.000625*1024))
+        dense_1_w_prec = numpyro.sample("dense_1_w_prec", dist.Gamma(0.25, 0.000625))
         # dense_1_b_prec = numpyro.sample("dense_1_b_prec", dist.Gamma(0.25, 0.000625))
-        dense_2_w_prec = numpyro.sample("dense_2_w_prec", dist.Gamma(0.25, 0.000625*10))
+        dense_2_w_prec = numpyro.sample("dense_2_w_prec", dist.Gamma(0.25, 0.000625))
         # dense_2_b_prec = numpyro.sample("dense_2_b_prec", dist.Gamma(0.25, 0.000625))
         # dense_3_w_prec = numpyro.sample("dense_3_w_prec", dist.Gamma(0.25, 0.000625/jnp.sqrt(1024)))
         # dense_3_b_prec = numpyro.sample("dense_3_b_prec", dist.Gamma(0.25, 0.000625))
@@ -198,7 +198,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
     train_preds = Predictive(model, mcmc.get_samples())(jax.random.PRNGKey(2), train_x, y=None)["y_pred"]
     train_preds_ave = jnp.mean(train_preds, axis=0)
     train_preds_index = jnp.argmax(train_preds_ave, axis=1)
-    accuracy = (temp_ds["label"] == train_preds_index).mean()*100
+    train_accuracy = (temp_ds["label"] == train_preds_index).mean()*100
     print("Train accuracy: ", accuracy)
 
     # Test accuracy calculation
@@ -206,7 +206,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
     test_preds = Predictive(model, mcmc.get_samples())(jax.random.PRNGKey(2), test_x, y=None)["y_pred"]
     test_preds_ave = jnp.mean(test_preds, axis=0)
     test_preds_index = jnp.argmax(test_preds_ave, axis=1)
-    accuracy = (test_ds["label"] == test_preds_index).mean()*100
+    test_accuracy = (test_ds["label"] == test_preds_index).mean()*100
     print("Test accuracy: ", accuracy)
 
     return mcmc, train_accuracy, test_accuracy
