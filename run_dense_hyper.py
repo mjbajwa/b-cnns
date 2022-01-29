@@ -175,7 +175,11 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
 
     # Run MCMC
 
-    mcmc.run(rng_key, train_x, y_train)
+    mcmc.run(rng_key, train_x, y_train, 
+             extra_fields = ("z", "i", 
+                             "num_steps", 
+                             "accept_prob", 
+                             "adapt_state.step_size"))
 
     ### Prediction Utilities
 
