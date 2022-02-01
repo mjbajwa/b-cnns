@@ -171,7 +171,11 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     # Run MCMC
 
-    mcmc.run(rng_key, train_x, y_train)
+    mcmc.run(rng_key, train_x, y_train, 
+             extra_fields = ("z", "i", 
+                             "num_steps", 
+                             "accept_prob", 
+                             "adapt_state.step_size"))
 
     # for i in range(NUM_SAMPLES):
     #    mcmc.run(random.PRNGKey(i), temp_ds['image'], y_train)
