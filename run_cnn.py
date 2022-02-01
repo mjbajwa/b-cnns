@@ -1,5 +1,7 @@
 import argparse
 import os
+import logging
+from pathlib import Path
 
 import flax
 import flax.linen as nn
@@ -11,10 +13,15 @@ import numpy as np
 import numpyro
 import numpyro.distributions as dist
 import tensorflow.compat.v2 as tf
+import tensorflow_datasets as tfds
+import tqdm
 from numpyro.contrib.module import random_flax_module
-from numpyro.infer import MCMC, NUTS, Predictive, init_to_feasible, init_to_value
+from numpyro.infer import MCMC, NUTS, Predictive, init_to_feasible
+from sklearn.preprocessing import LabelBinarizer
 
 from utils.load_data import load_cifar10_dataset
+from utils.misc import make_output_folder, mcmc_summary_to_dataframe, plot_extra_fields, plot_traces, rhat_histogram, print_extra_fields
+
 
 # jax.tools.colab_tpu.setup_tpu()
 
@@ -152,8 +159,8 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
     # kernel = NUTS(model, init_strategy=init_to_value(values=init_new), target_accept_prob=0.70)
     kernel = NUTS(model, 
                   init_strategy=init_to_feasible(), 
-                  target_accept_prob=0.80,
-                  max_tree_depth=10)
+                  target_accept_prob=0.70,
+                  max_tree_depth=1)
     mcmc = MCMC(
         kernel,
         num_warmup=NUM_WARMUP,
@@ -188,10 +195,8 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
     train_preds = Predictive(model, mcmc.get_samples())(
         jax.random.PRNGKey(2), train_x, y=None)["y_pred"]
     train_preds_ave = jnp.mean(train_preds, axis=0)
-    # train_preds_index = jnp.argmax(train_preds_ave, axis=1)
-    # accuracy = (temp_ds["label"] == train_preds_index).mean()*100
-    accuracy = (y_train == train_preds_ave).mean()*100
-    print("Train accuracy: ", accuracy)
+    train_accuracy = (y_train == train_preds_ave).mean()*100
+    print("Train accuracy: ", train_accuracy)
 
     # Test accuracy calculation
 
@@ -201,14 +206,10 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
     # accuracy = (y_test == test_preds_ave).mean()*100
     test_preds_ave = jnp.mean(test_preds, axis=0)
     test_preds_index = jnp.argmax(test_preds_ave, axis=1)
-    accuracy = (test_ds["label"] == test_preds_index).mean()*100
-    print("Test accuracy: ", accuracy)
+    test_accuracy = (test_ds["label"] == test_preds_index).mean()*100
+    print("Test accuracy: ", test_accuracy)
 
-    # all_samples = mcmc.get_samples()
-    # plt.plot(all_samples["CNN/Conv_0.kernel"][:, 3,3,3,16], "o")
-    # plt.plot(all_samples["CNN/Dense_0.kernel"][:, 10], "o")
-
-    # mcmc.print_summary()
+    return mcmc, train_accuracy, test_accuracy
 
 
 if __name__ == "__main__":
@@ -221,6 +222,43 @@ if __name__ == "__main__":
     parser.add_argument("--gpu", type=bool, default=False)
     args = parser.parse_args()
 
-    # Run main function
+    # Create folder to save results
 
-    run_conv_bnn(args.train_index, args.num_warmup, args.num_samples, args.gpu)
+    output_path = make_output_folder()
+    logging.basicConfig(filename=Path(output_path, 'results.log'), level=logging.INFO)
+    logging.info('Deep Bayesian Net - Fully Connected')
+    
+    # Run main function
+    
+    mcmc, train_acc, test_acc = run_conv_bnn(args.train_index, args.num_warmup, args.num_samples, args.gpu)
+    logging.info("Train accuracy: {}".format(train_acc))
+    logging.info("Test accuracy: {}".format(test_acc))
+
+    # Save trace plots 
+
+    logging.info("=========================")
+    logging.info("Plotting extra fields \n\n")
+    plot_extra_fields(mcmc, output_path)
+    print_extra_fields(mcmc, output_path)
+
+    # TODO: Trace plots
+    
+    # R-hat plot
+
+    logging.info("=========================")
+    logging.info("Histogram of R_hat and n_eff \n\n")
+    df = mcmc_summary_to_dataframe(mcmc)
+    # rhat_histogram(df, output_path)
+
+    # Write train and test accuracy to file
+
+    logging.info("=========================")
+    logging.info("Writing results to file \n\n")
+    results = ['Training Accuracy: {}'.format(train_acc), 
+               'Test Accuracy: {}'.format(test_acc)]
+    
+    with open(Path(output_path, 'results.txt'), 'w') as f:
+        f.write('-------- Results ----------\n\n')
+        f.write('\n'.join(results))
+
+    # TODO: write inputs into a file as well to track all experiments
