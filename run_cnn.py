@@ -161,7 +161,7 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
     kernel = NUTS(model, 
                   init_strategy=init_to_feasible(), 
                   target_accept_prob=0.80,
-                  max_tree_depth=12)
+                  max_tree_depth=10)
     mcmc = MCMC(
         kernel,
         num_warmup=NUM_WARMUP,
