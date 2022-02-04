@@ -112,11 +112,11 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
                 "Conv_0.bias": dist.Normal(0, 100),
                 "Conv_0.kernel": dist.Normal(0, 50),
                 "Conv_1.bias": dist.Normal(0, 100),
-                "Conv_1.kernel": dist.Normal(0, 20),
+                "Conv_1.kernel": dist.Normal(0, 50),
                 "Dense_0.bias": dist.Normal(0, 100),
-                "Dense_0.kernel": dist.Normal(0, 20),
+                "Dense_0.kernel": dist.Normal(0, 50),
                 "Dense_1.bias": dist.Normal(0, 100),
-                "Dense_1.kernel": dist.Normal(0, 100),
+                "Dense_1.kernel": dist.Normal(0, 50),
             },
             input_shape=(1, 32, 32, 3)
         )
@@ -159,7 +159,7 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
     # kernel = NUTS(model, init_strategy=init_to_value(values=init_new), target_accept_prob=0.70)
     kernel = NUTS(model, 
                   init_strategy=init_to_feasible(), 
-                  target_accept_prob=0.70,
+                  target_accept_prob=0.80,
                   max_tree_depth=12)
     mcmc = MCMC(
         kernel,
