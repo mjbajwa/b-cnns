@@ -109,14 +109,14 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
             module,
             # prior = dist.Normal(0, 100),
             prior={
-                "Conv_0.bias": dist.Normal(0, 100),
+                "Conv_0.bias": dist.Normal(0, 50),
                 "Conv_0.kernel": dist.Normal(0, 50),
-                "Conv_1.bias": dist.Normal(0, 100),
+                "Conv_1.bias": dist.Normal(0, 50),
                 "Conv_1.kernel": dist.Normal(0, 25),
-                "Dense_2.bias": dist.Normal(0, 100),
-                "Dense_2.kernel": dist.Normal(0, 50),
-                "Dense_3.bias": dist.Normal(0, 100),
-                "Dense_3.kernel": dist.Normal(0, 25),
+                "Dense_0.bias": dist.Normal(0, 50),
+                "Dense_0.kernel": dist.Normal(0, 50),
+                "Dense_1.bias": dist.Normal(0, 50),
+                "Dense_1.kernel": dist.Normal(0, 25),
             },
             input_shape=(1, 32, 32, 3)
         )
