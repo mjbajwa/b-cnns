@@ -75,9 +75,9 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
         @nn.compact
         def __call__(self, x):
             
-            x = nn.Dense(features=128)(x)
+            x = nn.Dense(features=32)(x)
             x = nn.swish(x) # TODO: check tanh vs softplus
-            x = nn.Dense(features=256)(x)
+            x = nn.Dense(features=16)(x)
             x = nn.swish(x) # TODO: check tanh vs softplus
             x = nn.Dense(features=10)(x)
             x = nn.softmax(x)
@@ -140,7 +140,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
     # Initialize MCMC
 
     # kernel = NUTS(model, init_strategy=init_to_value(values=init_new))
-    kernel = NUTS(model, init_strategy=init_to_feasible(), target_accept_prob=0.70)
+    kernel = NUTS(model, init_strategy=init_to_feasible(), target_accept_prob=0.80)
     mcmc = MCMC(  
         kernel,
         num_warmup=NUM_WARMUP,
@@ -197,7 +197,7 @@ if __name__ == "__main__":
     # Parse arguments
 
     parser = argparse.ArgumentParser(description="Convolutional Bayesian Neural Networks for CIFAR-10")
-    parser.add_argument("--train_index", type=int, default=50000)
+    parser.add_argument("--train_index", type=int, default=25000)
     parser.add_argument("--num_warmup", type=int, default=100)
     parser.add_argument("--num_samples", type=int, default=100)
     parser.add_argument("--gpu", type=bool, default=False)
