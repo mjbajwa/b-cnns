@@ -1,9 +1,14 @@
-import argparse
 import os
+ 
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform"
+
+import argparse
 import logging
 from pathlib import Path
 
 import flax
+import haiku as hk
 import flax.linen as nn
 import jax
 import jax.numpy as jnp
@@ -15,7 +20,7 @@ import numpyro.distributions as dist
 import tensorflow.compat.v2 as tf
 import tensorflow_datasets as tfds
 import tqdm
-from numpyro.contrib.module import random_flax_module
+from numpyro.contrib.module import random_flax_module, random_haiku_module
 from numpyro.infer import MCMC, NUTS, Predictive, init_to_feasible
 from sklearn.preprocessing import LabelBinarizer
 
@@ -34,26 +39,32 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     # Disable tensorflow from using GPU
 
-    tf.enable_v2_behavior()
+    # tf.enable_v2_behavior()
 
     if gpu:
 
-        physical_devices = tf.config.list_physical_devices('GPU')
+        # physical_devices = tf.config.list_physical_devices('GPU')
+        tf.config.experimental.set_visible_devices([], 'GPU')
 
-        try:
-            # Disable first GPU
-            tf.config.set_visible_devices(physical_devices[1:], 'TPU')
-            logical_devices = tf.config.list_logical_devices('TPU')
-            # Logical device was not created for first GPU
-            assert len(logical_devices) == len(physical_devices) - 1
-        except:
-            pass
+        # try:
+        #     # Disable first GPU
+        #     # tf.config.set_visible_devices(physical_devices[1:], 'TPU')
+        #     # logical_devices = tf.config.list_logical_devices('TPU')
+        #     tf.config.experimental.set_visible_devices([], 'GPU')
+        #     # Logical device was not created for first GPU
+        #     # assert len(logical_devices) == len(physical_devices) - 1
+        # except:
+        #     pass
 
         # Enable JAX/NumPyro to use GPU
 
-        os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform"
-        os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = ".8"
+        # os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform"
+        # os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = ".8"
         numpyro.set_platform("gpu")
+    
+    else:
+        numpyro.set_platform("cpu")
+        numpyro.set_host_device_count(11)
 
     # Set numpy seeds
 
@@ -81,6 +92,24 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
     # y_train = jnp.argmax(y_train, axis=1)
     # y_test = jnp.argmax(y_test, axis=1)
 
+    # Define Haiku Module
+    # def cnn_haiku(x):
+
+    #     cnn = hk.Sequential([
+    #         hk.Conv2D(output_channels=4, kernel_shape=3, padding="SAME"),
+    #         jax.nn.softplus,
+    #         hk.AvgPool(window_shape=3, strides=2, padding="VALID"),
+    #         hk.Conv2D(output_channels=8, kernel_shape=3, padding="SAME"),
+    #         jax.nn.softplus,
+    #         hk.AvgPool(window_shape=3, strides=2, padding="VALID"),
+    #         hk.Flatten(),
+    #         hk.Linear(32),
+    #         jax.nn.softplus,
+    #         hk.Linear(10),
+    #     ])
+        
+    #     return cnn(x)
+
     # Define model
 
     class CNN(nn.Module):
@@ -88,14 +117,14 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
         @nn.compact
         def __call__(self, x):
             x = nn.Conv(features=8, kernel_size=(3, 3))(x)
-            x = nn.softplus(x)
+            x = nn.swish(x)
             x = nn.avg_pool(x, window_shape=(3, 3), strides=(2, 2))
             x = nn.Conv(features=16, kernel_size=(3, 3))(x)
-            x = nn.softplus(x)
+            x = nn.swish(x)
             x = nn.avg_pool(x, window_shape=(3, 3), strides=(2, 2))
             x = x.reshape((x.shape[0], -1))  # flatten
-            x = nn.Dense(features=64)(x)
-            x = nn.softplus(x)
+            x = nn.Dense(features=32)(x)
+            x = nn.swish(x)
             x = nn.Dense(features=10)(x)
             x = nn.softmax(x)
             return x
@@ -107,19 +136,46 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
         net = random_flax_module(
             "CNN",
             module,
+            prior = dist.Cauchy(),
             # prior = dist.Normal(0, 100),
-            prior={
-                "Conv_0.bias": dist.Normal(0, 50),
-                "Conv_0.kernel": dist.Normal(0, 50),
-                "Conv_1.bias": dist.Normal(0, 50),
-                "Conv_1.kernel": dist.Normal(0, 25),
-                "Dense_0.bias": dist.Normal(0, 50),
-                "Dense_0.kernel": dist.Normal(0, 50),
-                "Dense_1.bias": dist.Normal(0, 50),
-                "Dense_1.kernel": dist.Normal(0, 25),
-            },
+            # prior={
+            #     # "Conv_0.bias": dist.Normal(0, 10),
+            #     # "Conv_0.kernel": dist.Normal(0, 10),
+            #     # "Conv_1.bias": dist.Normal(0, 10),
+            #     # "Conv_1.kernel": dist.Normal(0, 10),
+            #     # "Dense_0.bias": dist.Normal(0, 10),
+            #     # "Dense_0.kernel": dist.Normal(0, 10),
+            #     # "Dense_1.bias": dist.Normal(0, 10),
+            #     # "Dense_1.kernel": dist.Normal(0, 10),
+            #     "Conv_0.bias": dist.Cauchy(),
+            #     "Conv_0.kernel": dist.Cauchy(),
+            #     "Conv_1.bias": dist.Cauchy(),
+            #     "Conv_1.kernel": dist.Cauchy(),
+            #     "Dense_0.bias": dist.Cauchy(),
+            #     "Dense_0.kernel": dist.Cauchy(),
+            #     "Dense_1.bias": dist.Cauchy(),
+            #     "Dense_1.kernel": dist.Cauchy(),
+            # },
             input_shape=(1, 32, 32, 3)
         )
+
+        # net = random_haiku_module(
+        #     "CNN",
+        #     hk.transform(cnn_haiku),
+        #     prior = dist.Cauchy(),
+        #     # prior = dist.Normal(0, 100),
+        #     # prior={
+        #     #     "Conv_0.b": dist.Cauchy(),
+        #     #     "Conv_0.w": dist.Cauchy(),
+        #     #     "Conv_1.b": dist.Cauchy(),
+        #     #     "Conv_1.w": dist.Cauchy(),
+        #     #     "Dense_0.b": dist.Cauchy(),
+        #     #     "Dense_0.w": dist.Cauchy(),
+        #     #     "Dense_1.b": dist.Cauchy(),
+        #     #     "Dense_1.w": dist.Cauchy(),
+        #     # },
+        #     input_shape=(1, 32, 32, 3)
+        # )
 
         numpyro.sample("y_pred", dist.Multinomial(total_count=1, probs=net(x)), obs=y)
         # y1 = jnp.argmax(y, axis=0)
@@ -160,27 +216,35 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
     kernel = NUTS(model, 
                   init_strategy=init_to_feasible(), 
                   target_accept_prob=0.80,
-                  max_tree_depth=12)
+                  max_tree_depth=10,
+                  )
+    
+    
     mcmc = MCMC(
         kernel,
         num_warmup=NUM_WARMUP,
         num_samples=NUM_SAMPLES,
         num_chains=1,
-        progress_bar=True,
+        progress_bar=True, # TOGGLE this...
+        chain_method="vectorized",
+        # jit_model_args=True,
     )
 
     # Run MCMC
 
-    mcmc.run(rng_key, train_x, y_train, 
-             extra_fields = ("z", "i", 
-                             "num_steps", 
-                             "accept_prob", 
-                             "adapt_state.step_size"))
+    mcmc.run(rng_key, train_x, y_train)
+             # extra_fields = ("z", "i", 
+             #                "num_steps", 
+             #                "accept_prob", 
+             #                "adapt_state.step_size"))
+
+    # batches = []
 
     # for i in range(NUM_SAMPLES):
-    #    mcmc.run(random.PRNGKey(i), temp_ds['image'], y_train)
-    #    batches = [mcmc.get_samples()]
-    #    mcmc._warmup_state = mcmc._last_state
+    #     logging.info("")
+    #     mcmc.run(random.PRNGKey(i), train_x, y_train)
+    #     batches.append(mcmc.get_samples())
+    #     mcmc._warmup_state = mcmc._last_state
 
     # mcmc.print_summary()
 
@@ -228,8 +292,10 @@ if __name__ == "__main__":
     # Create folder to save results
 
     output_path = make_output_folder()
-    logging.basicConfig(filename=Path(output_path, 'results.log'), level=logging.INFO)
-    logging.info('Deep Bayesian Net - Fully Connected')
+    logging.basicConfig(filename=Path(output_path, 'results.log'), 
+                        level=logging.INFO, 
+                        format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s')
+    logging.info('Deep Bayesian Net - CNN')
     
     # Run main function
     
@@ -239,29 +305,29 @@ if __name__ == "__main__":
 
     # Save trace plots 
 
-    logging.info("=========================")
-    logging.info("Plotting extra fields \n\n")
-    plot_extra_fields(mcmc, output_path)
-    print_extra_fields(mcmc, output_path)
+    # logging.info("=========================")
+    # logging.info("Plotting extra fields \n\n")
+    # plot_extra_fields(mcmc, output_path)
+    # print_extra_fields(mcmc, output_path)
 
     # TODO: Trace plots
     
     # R-hat plot
 
-    logging.info("=========================")
-    logging.info("Histogram of R_hat and n_eff \n\n")
-    df = mcmc_summary_to_dataframe(mcmc)
+    # logging.info("=========================")
+    # logging.info("Histogram of R_hat and n_eff \n\n")
+    # df = mcmc_summary_to_dataframe(mcmc)
     # rhat_histogram(df, output_path)
 
     # Write train and test accuracy to file
 
-    logging.info("=========================")
-    logging.info("Writing results to file \n\n")
-    results = ['Training Accuracy: {}'.format(train_acc), 
-               'Test Accuracy: {}'.format(test_acc)]
+    # logging.info("=========================")
+    # logging.info("Writing results to file \n\n")
+    # results = ['Training Accuracy: {}'.format(train_acc), 
+    #            'Test Accuracy: {}'.format(test_acc)]
     
-    with open(Path(output_path, 'results.txt'), 'w') as f:
-        f.write('-------- Results ----------\n\n')
-        f.write('\n'.join(results))
+    # with open(Path(output_path, 'results.txt'), 'w') as f:
+    #     f.write('-------- Results ----------\n\n')
+    #     f.write('\n'.join(results))
 
     # TODO: write inputs into a file as well to track all experiments

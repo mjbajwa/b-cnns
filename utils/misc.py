@@ -5,6 +5,8 @@ from pathlib import Path
 import arviz
 import numpy as np
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from numpyro.diagnostics import summary
 
@@ -95,7 +97,7 @@ def plot_extra_fields(mcmc, output_path):
     plt.title("Acceptance Probability of Proposal")
     plt.grid()
     plt.savefig(Path(output_path, 'accept_prob.jpg'), transparent=False)
-    plt.show()
+    # plt.show()
     
     # Steps in HMC trajectory
     
@@ -106,7 +108,7 @@ def plot_extra_fields(mcmc, output_path):
     plt.title("Number of steps in HMC trajectory")
     plt.grid()
     plt.savefig(Path(output_path, 'hmc_steps.jpg'), transparent=False)
-    plt.show()
+    # plt.show()
 
 def print_extra_fields(mcmc, output_path):
 
@@ -124,7 +126,7 @@ def plot_traces(var, output_path):
                      kind="trace", compact=True, figsize=(20, 7));
     plt.grid()
     plt.savefig(Path(output_path, '{}.jpg'.format(var)), transparent=False)
-    plt.show()
+    # plt.show()
 
 
 def rhat_histogram(df, output_path):
@@ -133,4 +135,4 @@ def rhat_histogram(df, output_path):
     plt.grid()
     plt.hist(df["r_hat"], bins=50, color="red", density=True, stacked=True);
     plt.savefig(Path(output_path, 'rhat_distribution.jpg'), transparent=False)
-    plt.show()
+    # plt.show()
