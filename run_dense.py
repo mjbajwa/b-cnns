@@ -125,7 +125,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
             #     "Dense_2.bias": dist.Cauchy(), 
             #     "Dense_2.kernel": dist.Cauchy(),
             # },
-            prior = dist.Cauchy();
+            prior = dist.Cauchy(),
             input_shape=(3072, )
         
         )
