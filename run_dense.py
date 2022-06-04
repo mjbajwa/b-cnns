@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import argparse
 import os
+ 
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform"
+
+import argparse
 import logging
 from pathlib import Path
 
@@ -39,20 +43,21 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
     if gpu:
 
         physical_devices = tf.config.list_physical_devices('GPU')
+        tf.config.experimental.set_visible_devices([], 'GPU')
     
-        try:
-            # Disable first GPU
-            tf.config.set_visible_devices(physical_devices[1:], 'GPU')
-            logical_devices = tf.config.list_logical_devices('GPU')
-            # Logical device was not created for first GPU
-            assert len(logical_devices) == len(physical_devices) - 1
-        except:
-            pass
+        # try:
+        #     # Disable first GPU
+        #     tf.config.set_visible_devices(physical_devices[1:], 'GPU')
+        #     logical_devices = tf.config.list_logical_devices('GPU')
+        #     # Logical device was not created for first GPU
+        #     assert len(logical_devices) == len(physical_devices) - 1
+        # except:
+        #     pass
 
         # Enable JAX/NumPyro to use GPU
 
-        os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform" 
-        os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".8"
+        # os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform" 
+       #  os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".8"
         numpyro.set_platform("gpu")
         numpyro.set_host_device_count(11)
     
@@ -81,10 +86,12 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
         @nn.compact
         def __call__(self, x):
             
-            x = nn.Dense(features=512)(x)
-            x = nn.swish(x) # TODO: check tanh vs softplus
-            x = nn.Dense(features=1024)(x)
-            x = nn.swish(x) # TODO: check tanh vs softplus
+            x = nn.Dense(features=256)(x)
+            x = nn.softplus(x) # TODO: check tanh vs softplus
+            x = nn.Dense(features=128)(x)
+            x = nn.softplus(x) # TODO: check tanh vs softplus
+            x = nn.Dense(features=64)(x)
+            x = nn.softplus(x) # TODO: check tanh vs softplus
             x = nn.Dense(features=10)(x)
             x = nn.softmax(x)
             
@@ -98,19 +105,27 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
         net = random_flax_module(
             "DNN", 
             module, 
-            prior = {
-            "Dense_0.bias": dist.Normal(0, 100), # 50, 10, 100
-            "Dense_0.kernel": dist.Normal(0, 100), 
-            "Dense_1.bias": dist.Normal(0, 100), 
-            "Dense_1.kernel": dist.Normal(0, 100),
-            "Dense_2.bias": dist.Normal(0, 100), 
-            "Dense_2.kernel": dist.Normal(0, 100),
-            # "Dense_3.bias": dist.Normal(0, 10), 
-            # "Dense_3.kernel": dist.Normal(0, 10),
-            # "Dense_3.bias": dist.Normal(0, 10), 
-            # "Dense_3.kernel": dist.Normal(0, 10),
-            },
-            
+            # prior = {
+            # "Dense_0.bias": dist.Normal(0, 10), # 50, 10, 100
+            # "Dense_0.kernel": dist.Normal(0, 10), 
+            # "Dense_1.bias": dist.Normal(0, 10), 
+            # "Dense_1.kernel": dist.Normal(0, 10),
+            # "Dense_2.bias": dist.Normal(0, 10), 
+            # "Dense_2.kernel": dist.Normal(0, 10),
+            # # "Dense_3.bias": dist.Normal(0, 10), 
+            # # "Dense_3.kernel": dist.Normal(0, 10),
+            # # "Dense_3.bias": dist.Normal(0, 10), 
+            # # "Dense_3.kernel": dist.Normal(0, 10),
+            # },
+            # prior = {
+            #     "Dense_0.bias": dist.Cauchy(), # 50, 10, 100
+            #     "Dense_0.kernel": dist.Cauchy(), 
+            #     "Dense_1.bias": dist.Cauchy(), 
+            #     "Dense_1.kernel": dist.Cauchy(),
+            #     "Dense_2.bias": dist.Cauchy(), 
+            #     "Dense_2.kernel": dist.Cauchy(),
+            # },
+            prior = dist.Cauchy();
             input_shape=(3072, )
         
         )
@@ -148,7 +163,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
 
     # kernel = NUTS(model, init_strategy=init_to_value(values=init_new))
     kernel = NUTS(model, init_strategy=init_to_feasible(), 
-                  target_accept_prob=0.70, max_tree_depth=13)
+                  target_accept_prob=0.80, max_tree_depth=10)
     mcmc = MCMC(  
         kernel,
         num_warmup=NUM_WARMUP,
@@ -205,11 +220,11 @@ if __name__ == "__main__":
     
     # Parse arguments
 
-    parser = argparse.ArgumentParser(description="Deep Bayesian Neural Networks for CIFAR-10")
+    parser = argparse.ArgumentParser(description="FCN Deep Bayesian Neural Networks for CIFAR-10")
     parser.add_argument("--train_index", type=int, default=50000)
     parser.add_argument("--num_warmup", type=int, default=100)
     parser.add_argument("--num_samples", type=int, default=100)
-    parser.add_argument("--gpu", type=bool, default=False)
+    parser.add_argument("--gpu", type=bool, default=True)
     args = parser.parse_args()
 
     # Create folder to save results
@@ -229,7 +244,7 @@ if __name__ == "__main__":
     logging.info("=========================")
     logging.info("Plotting extra fields \n\n")
     plot_extra_fields(mcmc, output_path)
-    print_extra_fields(mcmc, output_path)
+    # print_extra_fields(mcmc, output_path)
 
     # TODO: Trace plots
     
@@ -238,7 +253,8 @@ if __name__ == "__main__":
     logging.info("=========================")
     logging.info("Histogram of R_hat and n_eff \n\n")
     df = mcmc_summary_to_dataframe(mcmc)
-    # rhat_histogram(df, output_path)
+    rhat_histogram(df, output_path)
+    df.to_parquet(Path(output_path, 'params_summary.parquet'))
 
     # Write train and test accuracy to file
 
