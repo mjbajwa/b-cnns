@@ -42,17 +42,17 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
     
     if gpu:
 
-        physical_devices = tf.config.list_physical_devices('GPU')
-        tf.config.experimental.set_visible_devices([], 'GPU')
+        # physical_devices = tf.config.list_physical_devices('GPU')
+        # tf.config.experimental.set_visible_devices([], 'GPU')
     
-        # try:
-        #     # Disable first GPU
-        #     tf.config.set_visible_devices(physical_devices[1:], 'GPU')
-        #     logical_devices = tf.config.list_logical_devices('GPU')
-        #     # Logical device was not created for first GPU
-        #     assert len(logical_devices) == len(physical_devices) - 1
-        # except:
-        #     pass
+        try:
+            # Disable first GPU
+            tf.config.set_visible_devices(physical_devices[1:], 'GPU')
+            logical_devices = tf.config.list_logical_devices('GPU')
+            # Logical device was not created for first GPU
+            assert len(logical_devices) == len(physical_devices) - 1
+        except:
+            pass
 
         # Enable JAX/NumPyro to use GPU
 
