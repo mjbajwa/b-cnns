@@ -18,8 +18,10 @@ def load_cifar10_dataset(train_index=50000, flatten=False):
                 'label': train_ds['label'].astype(jnp.int32)}
     # mean_train = train_ds['image'].mean(axis=(0, 1, 2)) # normalizing over each channel
     # std_train = train_ds['image'].std(axis=(0, 1, 2)) # normalizing over each channel
-    mean_train = jnp.array([125.30691805, 122.95039414, 113.86538318])
-    std_train = jnp.array([62.99321928, 62.08870764, 66.70489964])
+    # mean_train = jnp.array([125.30691805, 122.95039414, 113.86538318])
+    # std_train = jnp.array([62.99321928, 62.08870764, 66.70489964])
+    mean_train = jnp.array([127.5, 127.5, 127.5])
+    std_train = jnp.array([128, 128, 128])
     mean_train = mean_train[None, None, None, :] # broadcasting trick
     std_train = std_train[None, None, None, :]
     train_ds['image'] = (train_ds['image'] - mean_train) / std_train

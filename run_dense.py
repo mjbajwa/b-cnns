@@ -86,8 +86,8 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
         @nn.compact
         def __call__(self, x):
             
-            x = nn.Dense(features=256)(x)
-            x = nn.softplus(x) # TODO: check tanh vs softplus
+            # x = nn.Dense(features=256)(x)
+            # x = nn.softplus(x) # TODO: check tanh vs softplus
             x = nn.Dense(features=128)(x)
             x = nn.softplus(x) # TODO: check tanh vs softplus
             x = nn.Dense(features=64)(x)
@@ -125,7 +125,8 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False)
             #     "Dense_2.bias": dist.Cauchy(), 
             #     "Dense_2.kernel": dist.Cauchy(),
             # },
-            prior = dist.Cauchy(),
+            # prior = dist.Cauchy(),
+            prior = dist.StudentT(df=4.0, scale=0.1),
             input_shape=(3072, )
         
         )

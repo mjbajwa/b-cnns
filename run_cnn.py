@@ -2,6 +2,7 @@ import os
  
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform"
+os.environ["XLA_GPU_STRICT_CONV_ALGORITHM_PICKER"] = "false"
 
 import argparse
 import logging
@@ -23,10 +24,13 @@ import tqdm
 from numpyro.contrib.module import random_flax_module, random_haiku_module
 from numpyro.infer import MCMC, NUTS, Predictive, init_to_feasible
 from sklearn.preprocessing import LabelBinarizer
+from tensorflow.keras import mixed_precision
+
 
 from utils.load_data import load_cifar10_dataset
 from utils.misc import make_output_folder, mcmc_summary_to_dataframe, plot_extra_fields, plot_traces, rhat_histogram, print_extra_fields
 
+mixed_precision.set_global_policy('mixed_float16')
 
 # jax.tools.colab_tpu.setup_tpu()
 
@@ -58,8 +62,8 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
         # Enable JAX/NumPyro to use GPU
 
-        # os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform"
-        # os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = ".8"
+        #os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"] = "platform"
+        #os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = "0.87"
         numpyro.set_platform("gpu")
     
     else:
@@ -117,14 +121,14 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
         @nn.compact
         def __call__(self, x):
             x = nn.Conv(features=8, kernel_size=(3, 3))(x)
-            x = nn.swish(x)
+            x = nn.softplus(x)
             x = nn.avg_pool(x, window_shape=(3, 3), strides=(2, 2))
             x = nn.Conv(features=16, kernel_size=(3, 3))(x)
-            x = nn.swish(x)
+            x = nn.softplus(x)
             x = nn.avg_pool(x, window_shape=(3, 3), strides=(2, 2))
             x = x.reshape((x.shape[0], -1))  # flatten
             x = nn.Dense(features=32)(x)
-            x = nn.swish(x)
+            x = nn.softplus(x)
             x = nn.Dense(features=10)(x)
             x = nn.softmax(x)
             return x
@@ -136,7 +140,8 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
         net = random_flax_module(
             "CNN",
             module,
-            prior = dist.Cauchy(),
+            prior = dist.StudentT(df=4.0, scale=0.1),
+            # prior = dist.Cauchy(),
             # prior = dist.Normal(0, 100),
             # prior={
             #     # "Conv_0.bias": dist.Normal(0, 10),
@@ -306,8 +311,8 @@ if __name__ == "__main__":
     # Save trace plots 
 
     # logging.info("=========================")
-    # logging.info("Plotting extra fields \n\n")
-    # plot_extra_fields(mcmc, output_path)
+    logging.info("Plotting extra fields \n\n")
+    plot_extra_fields(mcmc, output_path)
     # print_extra_fields(mcmc, output_path)
 
     # TODO: Trace plots
@@ -315,19 +320,19 @@ if __name__ == "__main__":
     # R-hat plot
 
     # logging.info("=========================")
-    # logging.info("Histogram of R_hat and n_eff \n\n")
-    # df = mcmc_summary_to_dataframe(mcmc)
-    # rhat_histogram(df, output_path)
+    logging.info("Histogram of R_hat and n_eff \n\n")
+    df = mcmc_summary_to_dataframe(mcmc)
+    rhat_histogram(df, output_path)
 
     # Write train and test accuracy to file
 
     # logging.info("=========================")
-    # logging.info("Writing results to file \n\n")
-    # results = ['Training Accuracy: {}'.format(train_acc), 
-    #            'Test Accuracy: {}'.format(test_acc)]
+    logging.info("Writing results to file \n\n")
+    results = ['Training Accuracy: {}'.format(train_acc), 
+               'Test Accuracy: {}'.format(test_acc)]
     
-    # with open(Path(output_path, 'results.txt'), 'w') as f:
-    #     f.write('-------- Results ----------\n\n')
-    #     f.write('\n'.join(results))
+    with open(Path(output_path, 'results.txt'), 'w') as f:
+        f.write('-------- Results ----------\n\n')
+        f.write('\n'.join(results))
 
     # TODO: write inputs into a file as well to track all experiments
