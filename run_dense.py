@@ -18,7 +18,7 @@ import jax.tools.colab_tpu
 import numpy as np
 import numpyro
 import numpyro.distributions as dist
-import tensorflow.compat.v2 as tf
+# import tensorflow.compat.v2 as tf
 import tensorflow_datasets as tfds
 import tqdm
 from numpyro.contrib.module import random_flax_module
