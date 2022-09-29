@@ -2,6 +2,8 @@
 
 import argparse
 import os
+import logging
+from pathlib import Path
 
 import flax
 import flax.linen as nn
@@ -20,14 +22,18 @@ from numpyro.infer import MCMC, NUTS, Predictive, init_to_feasible
 from sklearn.preprocessing import LabelBinarizer
 
 from utils.load_data import load_cifar10_dataset
+from utils.misc import make_output_folder, mcmc_summary_to_dataframe, plot_extra_fields, plot_traces, rhat_histogram, print_extra_fields
+
 
 # jax.tools.colab_tpu.setup_tpu()
 
-def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
+def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     # Administrative stuff
 
     print(jax.default_backend())
+    print(jax.device_count())
+    print(jax.lib.xla_bridge.get_backend().platform)
     
     # Disable tensorflow from using GPU
 
@@ -76,10 +82,12 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
         @nn.compact
         def __call__(self, x):
             
-            x = nn.Dense(features=128)(x)
+            x = nn.Dense(features=256)(x)
             x = nn.swish(x) # TODO: check tanh vs softplus
             x = nn.Dense(features=256)(x)
             x = nn.swish(x) # TODO: check tanh vs softplus
+            # x = nn.Dense(features=128)(x)
+            # x = nn.swish(x) # TODO: check tanh vs softplus
             x = nn.Dense(features=10)(x)
             x = nn.softmax(x)
             
@@ -90,13 +98,13 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
 
         # Hyperparameters 
 
-        dense_0_w_prec = numpyro.sample("dense_0_w_prec", dist.Gamma(0.25, 0.000625))
-        dense_0_b_prec = numpyro.sample("dense_0_b_prec", dist.Gamma(0.25, 0.000625))
-        dense_1_w_prec = numpyro.sample("dense_1_w_prec", dist.Gamma(0.25, 0.000625/jnp.sqrt(256)))
-        dense_1_b_prec = numpyro.sample("dense_1_b_prec", dist.Gamma(0.25, 0.000625))
-        dense_2_w_prec = numpyro.sample("dense_2_w_prec", dist.Gamma(0.25, 0.000625/jnp.sqrt(10)))
-        dense_2_b_prec = numpyro.sample("dense_2_b_prec", dist.Gamma(0.25, 0.000625))
-        # dense_3_w_prec = numpyro.sample("dense_3_w_prec", dist.Gamma(0.25, 0.000625/jnp.sqrt(1024)))
+        dense_0_w_prec = numpyro.sample("dense_0_w_prec", dist.Gamma(0.25, 0.000625*256))
+        # dense_0_b_prec = numpyro.sample("dense_0_b_prec", dist.Gamma(0.25, 0.000625))
+        dense_1_w_prec = numpyro.sample("dense_1_w_prec", dist.Gamma(0.25, 0.000625*256))
+        # dense_1_b_prec = numpyro.sample("dense_1_b_prec", dist.Gamma(0.25, 0.000625))
+        dense_2_w_prec = numpyro.sample("dense_2_w_prec", dist.Gamma(0.25, 0.000625*10))
+        # dense_2_b_prec = numpyro.sample("dense_2_b_prec", dist.Gamma(0.25, 0.000625))
+        # dense_3_w_prec = numpyro.sample("dense_3_w_prec", dist.Gamma(0.25, 0.000625*10))
         # dense_3_b_prec = numpyro.sample("dense_3_b_prec", dist.Gamma(0.25, 0.000625))
         # dense_4_w_prec = numpyro.sample("dense_4_w_prec", dist.Gamma(0.25, 0.000625/jnp.sqrt(512)))
         # dense_4_b_prec = numpyro.sample("dense_4_b_prec", dist.Gamma(0.25, 0.000625))
@@ -110,13 +118,13 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
             "DNN", 
             module, 
             prior = {
-            "Dense_0.bias": dist.Normal(0, 1/jnp.sqrt(dense_0_b_prec)), 
+            "Dense_0.bias": dist.Normal(0, 100), 
             "Dense_0.kernel": dist.Normal(0, 1/jnp.sqrt(dense_0_w_prec)), 
-            "Dense_1.bias": dist.Normal(0, 1/jnp.sqrt(dense_1_b_prec)), 
+            "Dense_1.bias": dist.Normal(0, 100), 
             "Dense_1.kernel": dist.Normal(0, 1/jnp.sqrt(dense_1_w_prec)),
-            "Dense_2.bias": dist.Normal(0, 1/jnp.sqrt(dense_2_b_prec)), 
+            "Dense_2.bias": dist.Normal(0, 100), 
             "Dense_2.kernel": dist.Normal(0, 1/jnp.sqrt(dense_2_w_prec)),
-            # "Dense_3.bias": dist.Normal(0, 1/jnp.sqrt(dense_3_b_prec)), 
+            # "Dense_3.bias": dist.Normal(0, 100), 
             # "Dense_3.kernel": dist.Normal(0, 1/jnp.sqrt(dense_3_w_prec)), 
             # "Dense_4.bias": dist.Normal(0, 1/jnp.sqrt(dense_4_b_prec)), 
             # "Dense_4.kernel": dist.Normal(0, 1/jnp.sqrt(dense_4_w_prec)), 
@@ -157,7 +165,7 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
 
     # Initialize MCMC
 
-    kernel = NUTS(model, init_strategy=init_to_feasible(), target_accept_prob=0.8)
+    kernel = NUTS(model, init_strategy=init_to_feasible(), target_accept_prob=0.80, max_tree_depth=12)
     mcmc = MCMC(  
         kernel,
         num_warmup=NUM_WARMUP,
@@ -169,7 +177,11 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
 
     # Run MCMC
 
-    mcmc.run(rng_key, train_x, y_train)
+    mcmc.run(rng_key, train_x, y_train, 
+             extra_fields = ("z", "i", 
+                             "num_steps", 
+                             "accept_prob", 
+                             "adapt_state.step_size"))
 
     ### Prediction Utilities
 
@@ -183,37 +195,76 @@ def run_dense_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=True):
 
     # Train accuracy calculation
 
+    # train_preds = Predictive(model, mcmc.get_samples())(jax.random.PRNGKey(2), train_x, y=None)["y_pred"]
+    # train_preds_ave = jnp.mean(train_preds, axis=0)
+    # train_preds_index = jnp.argmax(train_preds_ave, axis=1)
+    # accuracy = (temp_ds["label"] == train_preds_index).mean()*100
+    # print("Train accuracy: ", accuracy)
+
     train_preds = Predictive(model, mcmc.get_samples())(jax.random.PRNGKey(2), train_x, y=None)["y_pred"]
     train_preds_ave = jnp.mean(train_preds, axis=0)
     train_preds_index = jnp.argmax(train_preds_ave, axis=1)
-    accuracy = (temp_ds["label"] == train_preds_index).mean()*100
-    print("Train accuracy: ", accuracy)
+    train_accuracy = (temp_ds["label"] == train_preds_index).mean()*100
+    print("Train accuracy: ", train_accuracy)
 
     # Test accuracy calculation
 
     test_preds = Predictive(model, mcmc.get_samples())(jax.random.PRNGKey(2), test_x, y=None)["y_pred"]
     test_preds_ave = jnp.mean(test_preds, axis=0)
     test_preds_index = jnp.argmax(test_preds_ave, axis=1)
-    accuracy = (test_ds["label"] == test_preds_index).mean()*100
-    print("Test accuracy: ", accuracy)
+    test_accuracy = (test_ds["label"] == test_preds_index).mean()*100
+    print("Test accuracy: ", test_accuracy)
 
-    # all_samples = mcmc.get_samples() 
-    # plt.plot(all_samples["CNN/Conv_0.kernel"][:, 3,3,3,16], "o")
-    # plt.plot(all_samples["CNN/Dense_0.kernel"][:, 10], "o")
-
-    # mcmc.print_summary()
+    return mcmc, train_accuracy, test_accuracy
 
 if __name__ == "__main__":
     
     # Parse arguments
 
-    parser = argparse.ArgumentParser(description="Convolutional Bayesian Neural Networks for CIFAR-10")
+    parser = argparse.ArgumentParser(description="(Hyperparameters) Deep Bayesian Neural Networks for CIFAR-10")
     parser.add_argument("--train_index", type=int, default=50000)
     parser.add_argument("--num_warmup", type=int, default=100)
     parser.add_argument("--num_samples", type=int, default=100)
     parser.add_argument("--gpu", type=bool, default=False)
     args = parser.parse_args()
 
+    # Create folder to save results
+
+    output_path = make_output_folder()
+    logging.basicConfig(filename=Path(output_path, 'results.log'), level=logging.INFO)
+    logging.info('Deep Bayesian Net - Fully Connected')
+    
     # Run main function
     
-    run_dense_bnn(args.train_index, args.num_warmup, args.num_samples, args.gpu)
+    mcmc, train_acc, test_acc = run_dense_bnn(args.train_index, args.num_warmup, args.num_samples, args.gpu)
+    logging.info("Train accuracy: {}".format(train_acc))
+    logging.info("Test accuracy: {}".format(test_acc))
+
+    # Save trace plots 
+
+    logging.info("=========================")
+    logging.info("Plotting extra fields \n\n")
+    plot_extra_fields(mcmc, output_path)
+    print_extra_fields(mcmc, output_path)
+
+    # TODO: Trace plots
+    
+    # R-hat plot
+
+    logging.info("=========================")
+    logging.info("Histogram of R_hat and n_eff \n\n")
+    df = mcmc_summary_to_dataframe(mcmc)
+    # rhat_histogram(df, output_path)
+
+    # Write train and test accuracy to file
+
+    logging.info("=========================")
+    logging.info("Writing results to file \n\n")
+    results = ['Training Accuracy: {}'.format(train_acc), 
+               'Test Accuracy: {}'.format(test_acc)]
+    
+    with open(Path(output_path, 'results.txt'), 'w') as f:
+        f.write('-------- Results ----------\n\n')
+        f.write('\n'.join(results))
+
+    # TODO: write inputs into a file as well to track all experiments
