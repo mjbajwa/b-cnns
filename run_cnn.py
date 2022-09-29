@@ -21,16 +21,15 @@ import numpyro.distributions as dist
 import tensorflow.compat.v2 as tf
 import tensorflow_datasets as tfds
 import tqdm
-from numpyro.contrib.module import random_flax_module, random_haiku_module
-from numpyro.infer import MCMC, NUTS, Predictive, init_to_feasible
-from sklearn.preprocessing import LabelBinarizer
-from tensorflow.keras import mixed_precision
 
+from numpyro.contrib.module import random_flax_module, random_haiku_module
+from numpyro.infer import MCMC, NUTS, Predictive, init_to_feasible, init_to_value
+from sklearn.preprocessing import LabelBinarizer
 
 from utils.load_data import load_cifar10_dataset
 from utils.misc import make_output_folder, mcmc_summary_to_dataframe, plot_extra_fields, plot_traces, rhat_histogram, print_extra_fields
 
-mixed_precision.set_global_policy('mixed_float16')
+# mixed_precision.set_global_policy('mixed_float16')
 
 # jax.tools.colab_tpu.setup_tpu()
 
@@ -141,52 +140,14 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
             "CNN",
             module,
             prior = dist.StudentT(df=4.0, scale=0.1),
-            # prior = dist.Cauchy(),
-            # prior = dist.Normal(0, 100),
-            # prior={
-            #     # "Conv_0.bias": dist.Normal(0, 10),
-            #     # "Conv_0.kernel": dist.Normal(0, 10),
-            #     # "Conv_1.bias": dist.Normal(0, 10),
-            #     # "Conv_1.kernel": dist.Normal(0, 10),
-            #     # "Dense_0.bias": dist.Normal(0, 10),
-            #     # "Dense_0.kernel": dist.Normal(0, 10),
-            #     # "Dense_1.bias": dist.Normal(0, 10),
-            #     # "Dense_1.kernel": dist.Normal(0, 10),
-            #     "Conv_0.bias": dist.Cauchy(),
-            #     "Conv_0.kernel": dist.Cauchy(),
-            #     "Conv_1.bias": dist.Cauchy(),
-            #     "Conv_1.kernel": dist.Cauchy(),
-            #     "Dense_0.bias": dist.Cauchy(),
-            #     "Dense_0.kernel": dist.Cauchy(),
-            #     "Dense_1.bias": dist.Cauchy(),
-            #     "Dense_1.kernel": dist.Cauchy(),
-            # },
             input_shape=(1, 32, 32, 3)
         )
-
-        # net = random_haiku_module(
-        #     "CNN",
-        #     hk.transform(cnn_haiku),
-        #     prior = dist.Cauchy(),
-        #     # prior = dist.Normal(0, 100),
-        #     # prior={
-        #     #     "Conv_0.b": dist.Cauchy(),
-        #     #     "Conv_0.w": dist.Cauchy(),
-        #     #     "Conv_1.b": dist.Cauchy(),
-        #     #     "Conv_1.w": dist.Cauchy(),
-        #     #     "Dense_0.b": dist.Cauchy(),
-        #     #     "Dense_0.w": dist.Cauchy(),
-        #     #     "Dense_1.b": dist.Cauchy(),
-        #     #     "Dense_1.w": dist.Cauchy(),
-        #     # },
-        #     input_shape=(1, 32, 32, 3)
-        # )
 
         numpyro.sample("y_pred", dist.Multinomial(total_count=1, probs=net(x)), obs=y)
         # y1 = jnp.argmax(y, axis=0)
         # numpyro.sample("y_pred", dist.Categorical(logits=net(x)), obs=y)
 
-    # Initialize parameters
+        # Initialize parameters
 
     model2 = CNN()
     batch = train_x[0:1, ]  # (N, H, W, C) format
@@ -312,7 +273,7 @@ if __name__ == "__main__":
 
     # logging.info("=========================")
     logging.info("Plotting extra fields \n\n")
-    plot_extra_fields(mcmc, output_path)
+    # plot_extra_fields(mcmc, output_path)
     # print_extra_fields(mcmc, output_path)
 
     # TODO: Trace plots
