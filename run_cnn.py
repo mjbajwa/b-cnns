@@ -9,7 +9,7 @@ import logging
 from pathlib import Path
 
 import flax
-import haiku as hk
+# import haiku as hk
 import flax.linen as nn
 import jax
 import jax.numpy as jnp
