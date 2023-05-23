@@ -1,9 +1,12 @@
-import os
-
 import argparse
+import copy
+import os
+from functools import partial
 from pathlib import Path
-import colorlog
+from typing import Any, Callable, Optional, Sequence
 
+import colorlog
+import einops
 import flax
 # import haiku as hk
 import flax.linen as nn
@@ -11,23 +14,87 @@ import jax
 import jax.numpy as jnp
 import jax.random as random
 import jax.tools.colab_tpu
+import ml_collections
 import numpy as np
 import numpyro
 import numpyro.distributions as dist
 import tensorflow.compat.v2 as tf
 import tensorflow_datasets as tfds
-import tqdm
-
-from numpyro.contrib.module import random_flax_module, random_haiku_module
-from numpyro.infer import MCMC, NUTS, Predictive, init_to_feasible, init_to_value
-from sklearn.preprocessing import LabelBinarizer
+from clu import parameter_overview
+from flax import linen as nn
+from flax.core import freeze, unfreeze
+from jax import numpy as jnp
+from jax import random
+from numpyro.contrib.module import random_flax_module
+from numpyro.infer import (MCMC, NUTS, Predictive, init_to_feasible,
+                           init_to_median, init_to_uniform, init_to_value)
 
 from utils.load_data import load_cifar10_dataset
-from utils.misc import make_output_folder, mcmc_summary_to_dataframe, plot_extra_fields, plot_traces, rhat_histogram, print_extra_fields
+from utils.misc import (make_output_folder, mcmc_summary_to_dataframe,
+                        plot_extra_fields, plot_traces, print_extra_fields,
+                        rhat_histogram)
 
-# mixed_precision.set_global_policy('mixed_float16')
 
-# jax.tools.colab_tpu.setup_tpu()
+class MlpBlock(nn.Module):
+  mlp_dim: int
+
+  @nn.compact
+  def __call__(self, x):
+    y = nn.Dense(self.mlp_dim)(x)
+    # y = nn.gelu(y)
+    y = nn.softplus(y)
+    return nn.Dense(x.shape[-1])(y)
+
+
+class MixerBlock(nn.Module):
+  """Mixer block layer."""
+  tokens_mlp_dim: int
+  channels_mlp_dim: int
+
+  @nn.compact
+  def __call__(self, x):
+    # y = nn.LayerNorm()(x)
+    y = x
+    y = jnp.swapaxes(y, 1, 2)
+    y = MlpBlock(self.tokens_mlp_dim, name='token_mixing')(y)
+    y = jnp.swapaxes(y, 1, 2)
+    x = x + y
+    # y = nn.LayerNorm()(x)
+    return x + MlpBlock(self.channels_mlp_dim, name='channel_mixing')(y)
+
+
+class MlpMixer(nn.Module):
+  """Mixer architecture."""
+  patches: Any
+  num_classes: int
+  num_blocks: int
+  hidden_dim: int
+  tokens_mlp_dim: int
+  channels_mlp_dim: int
+  model_name: Optional[str] = None
+
+  @nn.compact
+  def __call__(self, inputs):
+    x = nn.Conv(self.hidden_dim, self.patches.size,
+                strides=self.patches.size, name='stem')(inputs)
+    x = einops.rearrange(x, 'n h w c -> n (h w) c')
+    for _ in range(self.num_blocks):
+      x = MixerBlock(self.tokens_mlp_dim, self.channels_mlp_dim)(x)
+    # x = nn.LayerNorm(name='pre_head_layer_norm')(x)
+    x = jnp.mean(x, axis=1)
+    if self.num_classes:
+      x = nn.Dense(self.num_classes, kernel_init=nn.initializers.zeros,
+                   name='head')(x)
+      x = nn.softmax(x)
+    return x
+  
+def mixer_model():
+   return MlpMixer(patches=ml_collections.ConfigDict({'size': (5, 5)}), 
+                   num_classes=10, 
+                   num_blocks=3, 
+                   hidden_dim=64, 
+                   tokens_mlp_dim=64, 
+                   channels_mlp_dim=128)
 
 def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
@@ -88,64 +155,15 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
     train_x, test_x, y_train, y_test, temp_ds, test_ds = load_cifar10_dataset(
         train_index=TRAIN_IDX, flatten=False)
-    # print(y_train)
-    # y_train = jnp.argmax(y_train, axis=1)
-    # y_test = jnp.argmax(y_test, axis=1)
-
-    # Define Haiku Module
-    # def cnn_haiku(x):
-
-    #     cnn = hk.Sequential([
-    #         hk.Conv2D(output_channels=4, kernel_shape=3, padding="SAME"),
-    #         jax.nn.softplus,
-    #         hk.AvgPool(window_shape=3, strides=2, padding="VALID"),
-    #         hk.Conv2D(output_channels=8, kernel_shape=3, padding="SAME"),
-    #         jax.nn.softplus,
-    #         hk.AvgPool(window_shape=3, strides=2, padding="VALID"),
-    #         hk.Flatten(),
-    #         hk.Linear(32),
-    #         jax.nn.softplus,
-    #         hk.Linear(10),
-    #     ])
-        
-    #     return cnn(x)
 
     # Define model
 
-    class CNN(nn.Module):
-
-        @nn.compact
-        def __call__(self, x):
-            x = nn.Conv(features=16, kernel_size=(3, 3))(x)
-            x = nn.softplus(x)
-            x = nn.avg_pool(x, window_shape=(3, 3), strides=(2, 2))
-            x = nn.Conv(features=32, kernel_size=(3, 3))(x)
-            x = nn.softplus(x)
-            x = nn.avg_pool(x, window_shape=(3, 3), strides=(2, 2))
-            # x = x.reshape((x.shape[0], -1))  # flatten
-            # x = nn.Dense(features=64)(x)
-            # x = nn.softplus(x)
-            # x = nn.Dense(features=10)(x)
-            # x = nn.softmax(x)
-            # x = nn.Conv(features=8, kernel_size=(3, 3))(x)
-            # x = nn.softplus(x)
-            # x = nn.avg_pool(x, window_shape=(2, 2), strides=(2, 2))
-            # x = nn.Conv(features=4, kernel_size=(3, 3))(x)
-            # x = nn.softplus(x)
-            # x = nn.avg_pool(x, window_shape=(1, 1), strides=(1, 1))
-            x = x.reshape((x.shape[0], -1))
-            x = nn.Dense(features=128)(x)
-            x = nn.softplus(x)
-            x = nn.Dense(features=10)(x)
-            x = nn.softmax(x)
-            return x
-
     def model(x, y):
 
-        module = CNN()
+        module = mixer_model()
 
         net = random_flax_module(
-            "CNN",
+            "Resnet",
             module,
             prior = dist.StudentT(df=4.0, scale=0.1),
             input_shape=(1, 32, 32, 3)
@@ -157,39 +175,46 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 
         # Initialize parameters
 
-    model2 = CNN()
-    batch = train_x[0:1, ]  # (N, H, W, C) format
-    print("Batch shape: ", batch.shape)
-    variables = model2.init(jax.random.PRNGKey(42), batch)
-    output = model2.apply(variables, batch)
-    print("Output shape: ", output.shape)
-    init = flax.core.unfreeze(variables)["params"]
+    # model2 = ResNet20()
+    # batch = train_x[0:1, ]  # (N, H, W, C) format
+    # print("Batch shape: ", batch.shape)
+    # variables = model2.init(jax.random.PRNGKey(42), batch)
+    # output = model2.apply(variables, batch)
+    # print("Output shape: ", output.shape)
+    # init = flax.core.unfreeze(variables)["params"]
+    
+    model2 = mixer_model()
+    key = jax.random.PRNGKey(0)
+    variables = model2.init(key, np.random.randn(1, 32, 32, 3))
+    print(parameter_overview.get_parameter_overview(variables))
+    del model2, variables
 
     # Create more reasonable initial values by sampling from the prior
 
-    prior_dist = dist.Normal(0, 10)
-    init_new = init.copy()
-    total_params = 0
+    # prior_dist = dist.Normal(0, 10)
+    # init_new = init.copy()
+    # total_params = 0
 
-    for i, high in enumerate(init_new.keys()):
-        for low in init_new[high].keys():
-            print(init_new[high][low].shape)
-            init_new[high][low] = prior_dist.sample(
-                jax.random.PRNGKey(i), init_new[high][low].shape)
+    # for i, high in enumerate(init_new.keys()):
+    #     for low in init_new[high].keys():
+    #         print(init_new[high][low].shape)
+    #         init_new[high][low] = prior_dist.sample(
+    #             jax.random.PRNGKey(i), init_new[high][low].shape)
 
-            # increment count of total_params
-            layer_params = np.prod(
-                np.array([j for j in init_new[high][low].shape]))
-            total_params += layer_params
+    #         # increment count of total_params
+    #         layer_params = np.prod(
+    #             np.array([j for j in init_new[high][low].shape]))
+    #         total_params += layer_params
 
-    print("Total parameters: ", total_params)
+    # print("Total parameters: ", total_params)
 
     # Initialize MCMC
 
     # kernel = NUTS(model, init_strategy=init_to_value(values=init_new), target_accept_prob=0.70)
     kernel = NUTS(model, 
-                  init_strategy=init_to_feasible(), 
-                  target_accept_prob=0.80,
+                  # init_strategy = init_to_median(), # init_to_value(values=variables), # init_to_uniform(), 
+                  init_strategy = init_to_feasible(), # init_to_value(values=variables),
+                  target_accept_prob=0.70,
                   max_tree_depth=10,
                   )
     
@@ -199,25 +224,25 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
         num_samples=NUM_SAMPLES,
         num_chains=1,
         progress_bar=True, # TOGGLE this...
-        chain_method="vectorized",
+        chain_method="vectorized", # "vectorized"
         # jit_model_args=True,
     )
 
     # Run MCMC
 
     mcmc.run(rng_key, train_x, y_train)
-             # extra_fields = ("z", "i", 
-             #                "num_steps", 
-             #                "accept_prob", 
-             #                "adapt_state.step_size"))
+    # extra_fields = ("z", "i", 
+    #                "num_steps", 
+    #                "accept_prob", 
+    #                "adapt_state.step_size"))
 
     # batches = []
 
     # for i in range(NUM_SAMPLES):
-    #     logging.info("")
+    #     print(i)
     #     mcmc.run(random.PRNGKey(i), train_x, y_train)
     #     batches.append(mcmc.get_samples())
-    #     mcmc._warmup_state = mcmc._last_state
+    #     mcmc.post_warmup_state = mcmc.last_state
 
     # mcmc.print_summary()
 
@@ -255,7 +280,7 @@ def run_conv_bnn(train_index=50000, num_warmup=100, num_samples=100, gpu=False):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
-        description="Convolutional Bayesian Neural Networks for CIFAR-10")
+        description="ResNet for CIFAR-10")
     parser.add_argument("--train_index", type=int, default=25000)
     parser.add_argument("--num_warmup", type=int, default=100)
     parser.add_argument("--num_samples", type=int, default=100)
@@ -264,7 +289,7 @@ if __name__ == "__main__":
 
     os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
     # os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = ".30"
-    os.environ["XLA_GPU_STRICT_CONV_ALGORITHM_PICKER"] = "true"
+    # os.environ["XLA_GPU_STRICT_CONV_ALGORITHM_PICKER"] = "true"
     # os.environ['CUDA_VISIBLE_DEVICES'] = ''
     tf.config.experimental.set_visible_devices([], "GPU")
 
@@ -277,7 +302,7 @@ if __name__ == "__main__":
     logger = colorlog.getLogger(str(Path(output_path, 'results.log')))
     logger.addHandler(handler)
  
-    logger.info('Deep Bayesian Net - Convolutional Net')
+    logger.info('Deep Bayesian Net - MLP mixer')
     
     # Run main function
     
